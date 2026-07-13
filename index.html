@@ -9,8 +9,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   
-  <!-- Client-side PDF Engine CDN -->
+  <!-- Client-side PDF Engines CDNs -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 
   <style>
     :root {
@@ -300,7 +301,7 @@
       <div class="manifesto-box">
         <h3>Items to keep nearby:</h3>
         <ul>
-          <li>All official structural W-2 forms</li>
+          <li>All official structural W-2 forms[cite: 1]</li>
           <li>1099-NEC / 1099-MISC business paperwork[cite: 1]</li>
           <li>Venmo, CashApp, or direct cash spreadsheet details[cite: 1]</li>
         </ul>
@@ -793,8 +794,27 @@
     });
   }
 
-  /* NATIVE PDF COMPRESSION & GENERATION SYSTEM */
-  function downloadTranscriptPDF() {
+  /* Async helper to read file inputs as ArrayBuffers */
+  function readFileAsArrayBuffer(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(reader.error);
+      reader.readAsArrayBuffer(file);
+    });
+  }
+
+  /* Helper to append loaded image pages onto merged PDF Document */
+  function appendImagePage(pdfDoc, image) {
+    const page = pdfDoc.addPage([612, 792]); // Standard Letter size canvas
+    const { width, height } = image.scaleToFit(500, 680);
+    const x = (612 - width) / 2;
+    const y = (792 - height) / 2;
+    page.drawImage(image, { x, y, width, height });
+  }
+
+  /* NATIVE PDF COMPRESSION, COMPILATION, & ATTACHMENT APPENDING SYSTEM */
+  async function downloadTranscriptPDF() {
     const rawData = generatePayloadStructure();
     const transcriptText = constructPlainTextTranscript();
     
@@ -832,8 +852,72 @@
       currentY += verticalLineSpacing;
     });
 
-    const safeClientLabel = rawData.profile.name.toLowerCase().replace(/\s+/g, '_');
-    doc.save(`tax_transcript_${safeClientLabel}.pdf`);
+    // Generate core transcript pdf buffer bytes
+    const basePdfBytes = doc.output('arraybuffer');
+
+    try {
+      const { PDFDocument } = PDFLib;
+      const mergedPdf = await PDFDocument.create();
+      
+      // Copy and insert generated transcript pages into compiling stream
+      const basePdfDoc = await PDFDocument.load(basePdfBytes);
+      const copiedTranscriptPages = await mergedPdf.copyPages(basePdfDoc, basePdfDoc.getPageIndices());
+      copiedTranscriptPages.forEach(page => mergedPdf.addPage(page));
+
+      // Locate uploaded attachments across dynamically generated form sections
+      const attachedFilesArray = [];
+
+      // Step 2: W-2 uploaded files
+      document.querySelectorAll('.w2-file-field').forEach(input => {
+        if (input.files && input.files.length > 0) attachedFilesArray.push(input.files[0]);
+      });
+
+      // Step 3: SE Business files
+      document.querySelectorAll('.se-file-field').forEach(input => {
+        if (input.files && input.files.length > 0) attachedFilesArray.push(input.files[0]);
+      });
+
+      // Step 4: Casual Hustles file
+      const hustleInput = document.getElementById('hustleFileUpload');
+      if (hustleInput && hustleInput.files && hustleInput.files.length > 0) {
+        attachedFilesArray.push(hustleInput.files[0]);
+      }
+
+      // Process and merge each user file binary content directly into compilation
+      for (const file of attachedFilesArray) {
+        const fileBuffer = await readFileAsArrayBuffer(file);
+        const fileType = file.type;
+
+        if (fileType === 'application/pdf') {
+          const externalPdfDoc = await PDFDocument.load(fileBuffer);
+          const copiedPages = await mergedPdf.copyPages(externalPdfDoc, externalPdfDoc.getPageIndices());
+          copiedPages.forEach(page => mergedPdf.addPage(page));
+        } else if (fileType === 'image/jpeg' || fileType === 'image/jpg') {
+          const embeddedImage = await mergedPdf.embedJpg(fileBuffer);
+          appendImagePage(mergedPdf, embeddedImage);
+        } else if (fileType === 'image/png') {
+          const embeddedImage = await mergedPdf.embedPng(fileBuffer);
+          appendImagePage(mergedPdf, embeddedImage);
+        }
+      }
+
+      // Finalize and download compiled assembly output
+      const mergedPdfBytes = await mergedPdf.save();
+      const documentBlob = new Blob([mergedPdfBytes], { type: 'application/pdf' });
+      const downloadLink = document.createElement('a');
+      downloadLink.href = URL.createObjectURL(documentBlob);
+      
+      const safeClientLabel = rawData.profile.name.toLowerCase().replace(/\s+/g, '_');
+      downloadLink.download = `tax_transcript_${safeClientLabel}.pdf`;
+      downloadLink.click();
+      URL.revokeObjectURL(downloadLink.href);
+
+    } catch (err) {
+      console.error("PDF compiling assembly failed:", err);
+      alert("Notice: Dynamic file appending failed. Reverting download fallback to standard text-transcript document.");
+      const safeClientLabel = rawData.profile.name.toLowerCase().replace(/\s+/g, '_');
+      doc.save(`tax_transcript_${safeClientLabel}.pdf`);
+    }
   }
 </script>
 </body>
