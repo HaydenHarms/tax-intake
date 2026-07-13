@@ -1,0 +1,816 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Tax Intake Ledger</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Client-side PDF Engine CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <style>
+    :root {
+      --bg-paper: #fcfbfa;
+      --bg-grid: #f3f1eb;
+      --bg-card: #ffffff;
+      --color-primary: #1b3b2b; /* Deep Ledger Green */
+      --color-accent: #d96a3b;  /* Warm Terracotta */
+      --color-text: #242625;
+      --color-muted: #6e7370;
+      --color-border: #d4cdb8;
+      
+      --font-serif: 'Newsreader', serif;
+      --font-sans: 'Plus Jakarta Sans', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      --shadow-soft: 0 10px 30px rgba(27, 59, 43, 0.04);
+      --shadow-sharp: 4px 4px 0px 0px #1b3b2b;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      background-color: var(--bg-paper);
+      background-image: radial-gradient(var(--bg-grid) 1px, transparent 1px);
+      background-size: 24px 24px;
+      color: var(--color-text);
+      font-family: var(--font-sans);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+    }
+
+    /* SCREEN 1: FULLSCREEN WELCOME LANDING */
+    .welcome-screen {
+      background-color: var(--color-primary);
+      color: var(--bg-paper);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1.5rem;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      z-index: 100;
+      transition: opacity 0.4s ease, transform 0.4s ease;
+    }
+
+    .welcome-container {
+      max-width: 650px;
+      width: 100%;
+      text-align: center;
+      animation: fadeIn 0.6s ease-out;
+    }
+
+    .welcome-screen h1 {
+      font-family: var(--font-serif);
+      font-size: 3.5rem;
+      font-weight: 500;
+      line-height: 1.1;
+      margin-bottom: 1.5rem;
+    }
+
+    .welcome-screen p {
+      font-family: var(--font-serif);
+      font-style: italic;
+      font-size: 1.35rem;
+      opacity: 0.9;
+      line-height: 1.6;
+      margin-bottom: 2.5rem;
+    }
+
+    .manifesto-box {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 2rem;
+      border-radius: 8px;
+      margin-bottom: 3rem;
+      text-align: left;
+    }
+
+    .manifesto-box h3 {
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 1rem;
+      color: var(--color-accent);
+    }
+
+    .manifesto-box ul { list-style-type: none; font-size: 0.95rem; }
+    .manifesto-box li { margin-bottom: 0.75rem; padding-left: 1.25rem; position: relative; opacity: 0.9; }
+    .manifesto-box li::before { content: "→"; position: absolute; left: 0; color: var(--color-accent); }
+
+    /* SCREEN 2: FULLSCREEN FORMS WORKSPACE */
+    .workspace-screen {
+      display: none;
+      opacity: 0;
+      max-width: 900px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 3rem 1.5rem;
+      animation: fadeIn 0.5s ease-out 0.2s forwards;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .timeline-nav {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 4rem;
+      border-bottom: 2px solid var(--color-border);
+      padding-bottom: 0.5rem;
+      overflow-x: auto;
+    }
+
+    .timeline-btn {
+      background: none;
+      border: none;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      padding: 0.5rem 0.75rem;
+      color: var(--color-muted);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+      position: relative;
+      text-transform: uppercase;
+    }
+
+    .timeline-btn.active { color: var(--color-primary); font-weight: 600; }
+    .timeline-btn.active::after { content: ""; position: absolute; bottom: -10px; left: 0; right: 0; height: 2px; background-color: var(--color-primary); }
+
+    .form-step-panel { display: none; }
+    .form-step-panel.active { display: block; }
+
+    .step-header { margin-bottom: 2.5rem; }
+    .step-header h2 { font-family: var(--font-serif); font-size: 2.25rem; font-weight: 500; color: var(--color-primary); }
+    .step-header p { color: var(--color-muted); margin-top: 0.5rem; font-size: 1rem; }
+
+    .form-grid { display: grid; grid-template-columns: 1fr; gap: 1.5rem; margin-bottom: 2.5rem; }
+    @media (min-width: 640px) { .form-grid.cols-2 { grid-template-columns: repeat(2, 1fr); } }
+    .span-full { grid-column: 1 / -1; }
+
+    .field-group { display: flex; flex-direction: column; gap: 0.5rem; }
+    .field-group label { font-size: 0.8rem; font-weight: 700; color: var(--color-primary); text-transform: uppercase; letter-spacing: 0.03em; }
+
+    input[type="text"], input[type="email"], input[type="tel"], input[type="number"], select, textarea {
+      width: 100%;
+      padding: 0.85rem 1rem;
+      background-color: var(--bg-card);
+      border: 1px solid var(--color-border);
+      border-radius: 4px;
+      font-family: var(--font-sans);
+      font-size: 1rem;
+      color: var(--color-text);
+      transition: all 0.2s;
+    }
+    input:focus, select:focus, textarea:focus {
+      outline: none; border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(27, 59, 43, 0.06);
+    }
+
+    .curr-wrapper { position: relative; }
+    .curr-wrapper::before { content: "$"; position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); font-family: var(--font-mono); color: var(--color-muted); }
+    .curr-wrapper input { padding-left: 2rem; font-family: var(--font-mono); }
+    .field-tip { font-size: 0.75rem; color: var(--color-muted); font-weight: 400; text-transform: none; margin-left: 0.25rem; }
+
+    /* REPEATING CARD MODULAR STRUCTURING */
+    .repeater-card {
+      background: var(--bg-card);
+      border: 1px solid var(--color-border);
+      padding: 2rem;
+      border-radius: 6px;
+      margin-bottom: 1.5rem;
+      position: relative;
+      box-shadow: var(--shadow-soft);
+    }
+    .repeater-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      border-bottom: 1px dashed var(--color-border);
+      padding-bottom: 0.75rem;
+    }
+    .repeater-card-title { font-family: var(--font-mono); font-size: 0.85rem; font-weight: 600; color: var(--color-accent); }
+
+    /* FOOLPROOF DOCUMENT UPLOADER INPUT DESIGN */
+    .uploader-zone {
+      border: 2px dashed var(--color-border);
+      background: var(--bg-paper);
+      border-radius: 6px;
+      padding: 1.5rem;
+      text-align: center;
+      position: relative;
+      transition: all 0.2s;
+      cursor: pointer;
+    }
+    .uploader-zone:hover { border-color: var(--color-primary); background: #fdfdfd; }
+    .uploader-zone input[type="file"] {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer;
+    }
+    .uploader-text { font-size: 0.9rem; color: var(--color-primary); font-weight: 600; }
+    .uploader-subtext { font-size: 0.75rem; color: var(--color-muted); margin-top: 0.25rem; }
+    .file-status-badge {
+      display: inline-block; margin-top: 0.75rem; font-family: var(--font-mono); font-size: 0.75rem;
+      padding: 0.25rem 0.75rem; background: #e2ebd5; color: #3b5c22; border-radius: 30px; font-weight: 600;
+      word-break: break-all;
+    }
+
+    /* ACTION BUTTONS */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; padding: 0.85rem 2rem;
+      font-family: var(--font-mono); font-size: 0.85rem; font-weight: 600; border-radius: 4px;
+      cursor: pointer; transition: all 0.2s; text-transform: uppercase; letter-spacing: 0.02em; border: none;
+    }
+    .btn-action { background-color: var(--color-accent); color: #fff; }
+    .btn-action:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn-primary { background-color: var(--color-primary); color: var(--bg-paper); border: 2px solid var(--color-primary); }
+    .btn-primary:hover { background-color: transparent; color: var(--color-primary); }
+    .btn-secondary { background-color: transparent; color: var(--color-primary); border: 1px dashed var(--color-border); }
+    .btn-secondary:hover { border-color: var(--color-primary); background-color: rgba(27, 59, 43, 0.02); }
+    .btn-danger { background: none; border: none; color: #b91c1c; font-size: 0.75rem; text-transform: uppercase; font-family: var(--font-mono); cursor: pointer; font-weight: 600; }
+    .btn-danger:hover { text-decoration: underline; }
+
+    .ledger-table { width: 100%; border-collapse: collapse; margin-top: 0.5rem; }
+    .ledger-table th { background: var(--bg-grid); text-align: left; padding: 0.75rem; font-size: 0.75rem; font-weight: 700; color: var(--color-primary); text-transform: uppercase; border: 1px solid var(--color-border); font-family: var(--font-mono); }
+    .ledger-table td { padding: 0.5rem; border: 1px solid var(--color-border); background: #fff; }
+    .ledger-table input { border: none !important; padding: 0.5rem !important; width: 100%; font-size: 0.95rem; }
+    .ledger-table input:focus { outline: none; background: var(--bg-paper); }
+
+    /* SPECIFIC OVERRIDE: Prevent table padding from overriding currency alignment */
+    .ledger-table .curr-wrapper input {
+      padding-left: 1.75rem !important;
+    }
+    .ledger-table .curr-wrapper::before {
+      left: 0.75rem;
+    }
+
+    .form-navigation { display: flex; justify-content: space-between; align-items: center; margin-top: 4rem; border-top: 2px solid var(--color-primary); padding-top: 2rem; }
+
+    /* PREPARER TERMINAL TRANSCRIPT PRODUCTION */
+    .transcript-output-panel {
+      background: #0f172a; color: #f1f5f9; padding: 2.5rem; border-radius: 6px; font-family: var(--font-mono);
+      font-size: 0.85rem; line-height: 1.6; white-space: pre-wrap; overflow-x: auto; border: 1px solid var(--color-primary);
+      box-shadow: var(--shadow-sharp); margin-bottom: 2rem;
+    }
+    .transcript-actions-row { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; }
+  </style>
+</head>
+<body>
+
+  <!-- WELCOME LANDING -->
+  <section class="welcome-screen" id="welcomeDashboard">
+    <div class="welcome-container">
+      <h1>The Tax Intake<br>Ledger.</h1>
+      <p>Thank you for trusting me with this! After this simple form I will have all I need to begin working on your return and getting you that refund ASAP.</p>
+      
+      <div class="manifesto-box">
+        <h3>Items to keep nearby:</h3>
+        <ul>
+          <li>All official structural W-2 forms</li>
+          <li>1099-NEC / 1099-MISC business paperwork</li>
+          <li>Venmo, CashApp, or direct cash spreadsheet details</li>
+        </ul>
+      </div>
+
+      <button type="button" class="btn btn-action" style="padding: 1.25rem 3rem; font-size: 1rem;" onclick="revealFormWorkspace()">Begin Intake Engine</button>
+    </div>
+  </section>
+
+  <!-- FORM APPLICATION SPACE -->
+  <main class="workspace-screen" id="formWorkspace">
+    
+    <nav class="timeline-nav" id="timelineBar">
+      <button type="button" class="timeline-btn active" onclick="jumpDirectToStep(0)">01. Identity</button>
+      <button type="button" class="timeline-btn" onclick="jumpDirectToStep(1)">02. W-2 Earnings</button>
+      <button type="button" class="timeline-btn" onclick="jumpDirectToStep(2)">03. Self-Employment</button>
+      <button type="button" class="timeline-btn" onclick="jumpDirectToStep(3)">04. Casual Hustles</button>
+      <button type="button" class="timeline-btn" onclick="jumpDirectToStep(4)">05. Review Summary</button>
+    </nav>
+
+    <form id="masterIntakeForm" onsubmit="event.preventDefault();">
+
+      <!-- STEP 1: Core Identity[cite: 2] -->
+      <section class="form-step-panel active" id="stepPanel0">
+        <div class="step-header">
+          <h2>Core Identity Profile</h2>
+          <p>Provide your fundamental identity metrics and profile information.</p>
+        </div>
+        <div class="form-grid cols-2">
+          <div class="field-group">
+            <label>Full Legal Name</label>
+            <input type="text" id="legalName" placeholder="Johnathan Doe" required>
+          </div>
+          <div class="field-group">
+            <label>Target Filing Status</label>
+            <select id="filingStatus">
+              <option value="Single">Single</option>
+              <option value="Married Filing Jointly">Married Filing Jointly</option>
+              <option value="Married Filing Separately">Married Filing Separately</option>
+              <option value="Head of Household">Head of Household</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label>Email Address</label>
+            <input type="email" id="emailAddress" placeholder="name@domain.com" required>
+          </div>
+          <div class="field-group">
+            <label>Phone Contact Number</label>
+            <input type="tel" id="phoneNumber" placeholder="(555) 000-0000">
+          </div>
+
+          <div class="field-group span-full">
+            <label>Life Events / Notes <span class="field-tip">(Moved states, changed professions, marital updates?)</span></label>
+            <textarea id="filingNotes" rows="4" placeholder="Describe any notable shifts here..."></textarea>
+          </div>
+        </div>
+      </section>
+
+      <!-- STEP 2: Refined W-2 Wages Panel -->
+      <section class="form-step-panel" id="stepPanel1">
+        <div class="step-header">
+          <h2>W-2 Traditional Salary Blocks</h2>
+          <p>Please mirror the values from your official physical W-2 document into the slots below.</p>
+        </div>
+        <div id="w2DynamicContainer"></div>
+        <button type="button" class="btn btn-secondary" onclick="generateW2FormBlock()">+ Add Another W-2 Form</button>
+      </section>
+
+      <!-- STEP 3: Self-Employment -->
+      <section class="form-step-panel" id="stepPanel2">
+        <div class="step-header">
+          <h2>Self-Employment & Structured Freelance (1099)</h2>
+          <p>For contract work pipelines, independent consulting, sole proprietorships, or personal business operations.</p>
+        </div>
+        <div id="seDynamicContainer"></div>
+        <button type="button" class="btn btn-secondary" onclick="generateSEFormBlock()">+ Add Business Entity Setup</button>
+      </section>
+
+      <!-- STEP 4: Casual Side Hustles -->
+      <section class="form-step-panel" id="stepPanel3">
+        <div class="step-header">
+          <h2>Casual Side Hustles & Undocumented Cash Flows</h2>
+          <p>For informal cash tips, peer-to-peer marketplace flipping, or direct Zelle/Venmo income lacking formal 1099 paperwork.</p>
+        </div>
+        <div class="repeater-card">
+          <table class="ledger-table" id="hustleFormTable">
+            <thead>
+              <tr>
+                <th>Gig Nature Description</th>
+                <th style="width: 170px;">Gross Revenue</th>
+                <th style="width: 170px;">Direct Expenses</th>
+                <th style="width: 45px;"></th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+          <div style="margin-top: 1.25rem; margin-bottom: 1.5rem;">
+            <button type="button" class="btn btn-secondary" onclick="generateHustleLineItem()">+ Add Line Entry</button>
+          </div>
+
+          <!-- Casual Income Document Intake Proofing -->
+          <div class="field-group" style="border-top: 1px dashed var(--color-border); padding-top: 1.5rem;">
+            <label>Hustle Tracking & Cash Bookkeeping Ledger Receipts</label>
+            <div class="uploader-zone">
+              <input type="file" id="hustleFileUpload" accept=".pdf,.png,.jpg,.jpeg,.csv,.xlsx" onchange="processFileUploadStatus(this, 'hustle_file_lbl')">
+              <div class="uploader-text">Attach Bank Statements, Venmo CSVs, or Expense Spreadsheets</div>
+              <div class="uploader-subtext">Required to substantiate the undocumented figures above</div>
+              <div class="file-status-badge" id="hustle_file_lbl" style="background:#f1f5f9; color:#475569;">No document attached</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- STEP 5: Final Clean Transcript View For Preparer -->
+      <section class="form-step-panel" id="stepPanel4">
+        <div class="step-header">
+          <h2>Compiled Tax Intake Transcript</h2>
+          <p>Your data transcript has successfully generated. Download the ledger file below for formal system compliance records.</p>
+        </div>
+        
+        <div class="transcript-actions-row">
+          <button type="button" class="btn btn-primary" onclick="downloadTranscriptPDF()">Download Clean PDF Ledger</button>
+          <button type="button" class="btn btn-secondary" onclick="copyTranscriptToClipboard()">Copy to Clipboard</button>
+        </div>
+
+        <div class="transcript-output-panel" id="masterTranscriptBlock"></div>
+      </section>
+
+      <!-- Navigation Bar Footer -->
+      <footer class="form-navigation">
+        <button type="button" class="btn btn-secondary" id="backNavBtn" onclick="shiftStepPointer(-1)">← Back</button>
+        <button type="button" class="btn btn-primary" id="forwardNavBtn" onclick="shiftStepPointer(1)">Continue →</button>
+      </footer>
+
+    </form>
+  </main>
+
+<script>
+  let activeStep = 0;
+  const totalStepsCount = 5;
+  
+  let incrementW2Id = 0;
+  let incrementSEId = 0;
+
+  function revealFormWorkspace() {
+    const splash = document.getElementById('welcomeDashboard');
+    splash.style.opacity = '0';
+    setTimeout(() => {
+      splash.style.display = 'none';
+      const workspace = document.getElementById('formWorkspace');
+      workspace.style.display = 'block';
+      setTimeout(() => workspace.style.opacity = '1', 50);
+    }, 400);
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    generateW2FormBlock();
+    generateSEFormBlock();
+    generateHustleLineItem();
+    syncStepViewSettings();
+  });
+
+  function syncStepViewSettings() {
+    for (let i = 0; i < totalStepsCount; i++) {
+      const targetPanel = document.getElementById(`stepPanel${i}`);
+      if (targetPanel) targetPanel.classList.toggle('active', i === activeStep);
+    }
+
+    const subTimelineBtns = document.querySelectorAll('#timelineBar .timeline-btn');
+    subTimelineBtns.forEach((btn, idx) => {
+      btn.classList.toggle('active', idx === activeStep);
+    });
+
+    document.getElementById('backNavBtn').style.visibility = activeStep === 0 ? 'hidden' : 'visible';
+
+    if (activeStep === totalStepsCount - 1) {
+      document.getElementById('forwardNavBtn').style.display = 'none';
+      executeTranscriptCompilation();
+    } else {
+      document.getElementById('forwardNavBtn').style.display = 'inline-flex';
+      document.getElementById('forwardNavBtn').innerText = "Continue →";
+    }
+  }
+
+  function shiftStepPointer(direction) {
+    activeStep += direction;
+    if (activeStep < 0) activeStep = 0;
+    if (activeStep >= totalStepsCount) activeStep = totalStepsCount - 1;
+    syncStepViewSettings();
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }
+
+  function jumpDirectToStep(stepIndex) {
+    activeStep = stepIndex;
+    syncStepViewSettings();
+  }
+
+  /* Universal File Upload State Monitor */
+  function processFileUploadStatus(inputElement, labelId) {
+    const outputText = document.getElementById(labelId);
+    if (inputElement.files && inputElement.files.length > 0) {
+      outputText.innerText = `📄 Attached: ${inputElement.files[0].name}`;
+      outputText.style.background = "#e2ebd5";
+      outputText.style.color = "#3b5c22";
+    } else {
+      outputText.innerText = "No document file uploaded";
+      outputText.style.background = "#f1f5f9";
+      outputText.style.color = "#475569";
+    }
+  }
+
+  /* Dynamic Builder: W-2 Box Modules */
+  function generateW2FormBlock() {
+    incrementW2Id++;
+    const container = document.getElementById('w2DynamicContainer');
+    const element = document.createElement('div');
+    element.className = 'repeater-card w2-data-node';
+    element.id = `w2_card_node_${incrementW2Id}`;
+    element.innerHTML = `
+      <div class="repeater-card-header">
+        <span class="repeater-card-title">W-2 Employer Entry (#${incrementW2Id})</span>
+        <button type="button" class="btn-danger" onclick="pruneSelectedElement('${element.id}')">Delete Entry</button>
+      </div>
+      <div class="form-grid cols-2">
+        <div class="field-group span-full">
+          <label>Employer Business Name</label>
+          <input type="text" class="w2-employer-field" placeholder="Employer name as written on paper form">
+        </div>
+        <div class="field-group">
+          <label>Box 1: Wages, Tips, other Compensation</label>
+          <div class="curr-wrapper"><input type="number" class="w2-wages-field" min="0" placeholder="0.00" step="0.01"></div>
+        </div>
+        <div class="field-group">
+          <label>Box 2: Federal Income Tax Withheld</label>
+          <div class="curr-wrapper"><input type="number" class="w2-fedtax-field" min="0" placeholder="0.00" step="0.01"></div>
+        </div>
+        <div class="field-group">
+          <label>Box 16: State Wages, Tips, etc.</label>
+          <div class="curr-wrapper"><input type="number" class="w2-statewages-field" min="0" placeholder="0.00" step="0.01"></div>
+        </div>
+        <div class="field-group">
+          <label>Box 17: State Income Tax Withheld</label>
+          <div class="curr-wrapper"><input type="number" class="w2-statetax-field" min="0" placeholder="0.00" step="0.01"></div>
+        </div>
+        
+        <div class="field-group span-full" style="margin-top:0.5rem;">
+          <label>W-2 Form Upload Requirement</label>
+          <div class="uploader-zone">
+            <input type="file" class="w2-file-field" accept=".pdf,.png,.jpg,.jpeg" onchange="processFileUploadStatus(this, 'file_lbl_${incrementW2Id}')">
+            <div class="uploader-text">Click or Drop your W-2 File/Photo here</div>
+            <div class="uploader-subtext">Accepts PDF, PNG, or JPEG formats</div>
+            <div class="file-status-badge" id="file_lbl_${incrementW2Id}" style="background:#f1f5f9; color:#475569;">No document file uploaded</div>
+          </div>
+        </div>
+      </div>
+    `;
+    container.appendChild(element);
+  }
+
+  /* Dynamic Builder: Self Employment Module (With Integrated Proof Uploads) */
+  function generateSEFormBlock() {
+    incrementSEId++;
+    const container = document.getElementById('seDynamicContainer');
+    const element = document.createElement('div');
+    element.className = 'repeater-card se-data-node';
+    element.id = `se_card_node_${incrementSEId}`;
+    element.innerHTML = `
+      <div class="repeater-card-header">
+        <span class="repeater-card-title">Schedule C Business Unit (#${incrementSEId})</span>
+        <button type="button" class="btn-danger" onclick="pruneSelectedElement('${element.id}')">Delete Unit</button>
+      </div>
+      <div class="form-grid cols-2">
+        <div class="field-group">
+          <label>Business Focus / Profession Line</label>
+          <input type="text" class="se-bizname-field" placeholder="E.g., Freelance Video Editor, Software Consultant">
+        </div>
+        <div class="field-group">
+          <label>Total 1099 Gross Earnings / Invoiced Totals</label>
+          <div class="curr-wrapper"><input type="number" class="se-gross-field" min="0" placeholder="0.00" step="0.01"></div>
+        </div>
+        <div class="field-group span-full">
+          <label>Itemized Operational Expenses Summary</label>
+          <textarea class="se-expenses-field" rows="3" placeholder="E.g., Web Hosting: $120, Camera Gear Rental: $400, Office supplies: $90..."></textarea>
+        </div>
+        <div class="field-group">
+          <label>Total Commuted/Business Miles Driven</label>
+          <input type="number" class="se-miles-field" min="0" placeholder="0">
+        </div>
+        <div class="field-group">
+          <label>Home Office Space Footprint</label>
+          <input type="number" class="se-office-field" min="0" placeholder="0 sq ft">
+        </div>
+
+        <div class="field-group span-full" style="margin-top:0.5rem;">
+          <label>Business 1099 Forms or Income Ledgers Upload</label>
+          <div class="uploader-zone">
+            <input type="file" class="se-file-field" accept=".pdf,.png,.jpg,.jpeg,.csv,.xlsx" onchange="processFileUploadStatus(this, 'se_file_lbl_${incrementSEId}')">
+            <div class="uploader-text">Upload matching 1099-NEC forms or gross tracking spreadsheets</div>
+            <div class="uploader-subtext">Accepts PDF, CSV, Excel, or Image scans</div>
+            <div class="file-status-badge" id="se_file_lbl_${incrementSEId}" style="background:#f1f5f9; color:#475569;">No document file uploaded</div>
+          </div>
+        </div>
+      </div>
+    `;
+    container.appendChild(element);
+  }
+
+  /* Dynamic Builder: Side Hustle Line Row Matrix */
+  function generateHustleLineItem() {
+    const targetBody = document.querySelector('#hustleFormTable tbody');
+    const tableRow = document.createElement('tr');
+    tableRow.className = 'hustle-row-node';
+    tableRow.innerHTML = `
+      <td><input type="text" class="hustle-desc-field" placeholder="E.g., Cash tutoring, secondary marketplace sales"></td>
+      <td><div class="curr-wrapper"><input type="number" class="hustle-gross-field" min="0" placeholder="0.00" step="0.01"></div></td>
+      <td><div class="curr-wrapper"><input type="number" class="hustle-expense-field" min="0" placeholder="0.00" step="0.01"></div></td>
+      <td style="text-align: center;"><button type="button" class="btn-danger" onclick="this.closest('tr').remove()" style="font-size: 1.25rem; line-height: 1;">&times;</button></td>
+    `;
+    targetBody.appendChild(tableRow);
+  }
+
+  function pruneSelectedElement(elementId) {
+    const targetedNode = document.getElementById(elementId);
+    if(targetedNode) targetedNode.remove();
+  }
+
+  /* Gather values to map object (Including document filename mapping)[cite: 2] */
+  function generatePayloadStructure() {
+    const hustleInput = document.getElementById('hustleFileUpload');
+    const hustleFileName = (hustleInput && hustleInput.files.length > 0) ? hustleInput.files[0].name : "No casual statement sheets attached";
+
+    const coreStructure = {
+      profile: {
+        name: document.getElementById('legalName').value || 'UNSPECIFIED CLIENT',
+        status: document.getElementById('filingStatus').value,
+        email: document.getElementById('emailAddress').value || 'N/A',
+        phone: document.getElementById('phoneNumber').value || 'N/A',
+        notes: document.getElementById('filingNotes').value || 'None'
+      },
+      w2s: [],
+      scheduleC: [],
+      casualGigs: [],
+      casualFile: hustleFileName
+    };
+
+    // Extract W2 data
+    document.querySelectorAll('.w2-data-node').forEach(node => {
+      const empName = node.querySelector('.w2-employer-field').value;
+      const fileField = node.querySelector('.w2-file-field');
+      let fileNameValue = "No file uploaded";
+      if(fileField && fileField.files.length > 0) {
+        fileNameValue = fileField.files[0].name;
+      }
+
+      if (empName) {
+        coreStructure.w2s.push({
+          employer: empName,
+          wages: parseFloat(node.querySelector('.w2-wages-field').value) || 0,
+          fedTax: parseFloat(node.querySelector('.w2-fedtax-field').value) || 0,
+          stateWages: parseFloat(node.querySelector('.w2-statewages-field').value) || 0,
+          stateTax: parseFloat(node.querySelector('.w2-statetax-field').value) || 0,
+          attachedFileName: fileNameValue
+        });
+      }
+    });
+
+    // Extract Schedule C business data
+    document.querySelectorAll('.se-data-node').forEach(node => {
+      const bizName = node.querySelector('.se-bizname-field').value;
+      const fileField = node.querySelector('.se-file-field');
+      let fileNameValue = "No business statement uploaded";
+      if(fileField && fileField.files.length > 0) {
+        fileNameValue = fileField.files[0].name;
+      }
+
+      if (bizName) {
+        coreStructure.scheduleC.push({
+          business: bizName,
+          gross: parseFloat(node.querySelector('.se-gross-field').value) || 0,
+          expenses: node.querySelector('.se-expenses-field').value || 'None detailed',
+          miles: parseInt(node.querySelector('.se-miles-field').value) || 0,
+          sqft: parseInt(node.querySelector('.se-office-field').value) || 0,
+          attachedFileName: fileNameValue
+        });
+      }
+    });
+
+    // Extract casual row matrix metrics
+    document.querySelectorAll('.hustle-row-node').forEach(row => {
+      const itemDesc = row.querySelector('.hustle-desc-field').value;
+      if (itemDesc) {
+        const grossVal = parseFloat(row.querySelector('.hustle-gross-field').value) || 0;
+        const expVal = parseFloat(row.querySelector('.hustle-expense-field').value) || 0;
+        coreStructure.casualGigs.push({
+          description: itemDesc,
+          gross: grossVal,
+          expenses: expVal,
+          net: (grossVal - expVal)
+        });
+      }
+    });
+
+    return coreStructure;
+  }
+
+  /* Compile formatted plaintext ledger script representation[cite: 2] */
+  function constructPlainTextTranscript() {
+    const rawData = generatePayloadStructure();
+    
+    let block = `====================================================================\n`;
+    block += `                  CLIENT INTENDED TAX DATA TRANSCRIPT               \n`;
+    block += `====================================================================\n\n`;
+    
+    block += `[01. TAXPAYER PROFILE METRICS]\n`;
+    block += `--------------------------------------------------------------------\n`;
+    block += `Client Name    : ${rawData.profile.name}\n`;
+    block += `Filing Status  : ${rawData.profile.status}\n`;
+    block += `Email Address  : ${rawData.profile.email}\n`;
+    block += `Phone Contact  : ${rawData.profile.phone}\n`;
+    block += `Preparer Notes : ${rawData.profile.notes}\n\n`;
+
+    block += `[02. STRUCTURAL W-2 INCOME LINE ITEMS]\n`;
+    block += `--------------------------------------------------------------------\n`;
+    if (rawData.w2s.length === 0) {
+      block += `No structural W-2 forms recorded.\n\n`;
+    } else {
+      rawData.w2s.forEach((w, index) => {
+        block += `Record ${index + 1}: ${w.employer}\n`;
+        block += `  Box 1 (Wages Overall)   : $${w.wages.toFixed(2)}\n`;
+        block += `  Box 2 (Federal W/H)     : $${w.fedTax.toFixed(2)}\n`;
+        block += `  Box 16 (State Wages)    : $${w.stateWages.toFixed(2)}\n`;
+        block += `  Box 17 (State W/H)      : $${w.stateTax.toFixed(2)}\n`;
+        block += `  Attached Document File  : ${w.attachedFileName}\n`;
+        block += `  -----------------------\n`;
+      });
+      const collectiveW2Sum = rawData.w2s.reduce((prev, curr) => prev + curr.wages, 0);
+      block += `CUMULATIVE COMBINED W-2 GROSS VALUE: $${collectiveW2Sum.toFixed(2)}\n\n`;
+    }
+
+    block += `[03. SCHEDULE C - BUSINESS FREELANCE PROFILES]\n`;
+    block += `--------------------------------------------------------------------\n`;
+    if (rawData.scheduleC.length === 0) {
+      block += `No self-employment business tracking modules reported.\n\n`;
+    } else {
+      rawData.scheduleC.forEach((biz, index) => {
+        block += `Venture ${index + 1}: ${biz.business}\n`;
+        block += `  Gross Form Revenue      : $${biz.gross.toFixed(2)}\n`;
+        block += `  Business Miles Driven   : ${biz.miles} mi\n`;
+        block += `  Home Office Allocation  : ${biz.sqft} sq ft\n`;
+        block += `  Attached Account/Form   : ${biz.attachedFileName}\n`;
+        block += `  Reported Deductions     : ${biz.expenses}\n`;
+        block += `  -----------------------\n`;
+      });
+    }
+
+    block += `[04. CASUAL REVENUE STREAMS & UNSUMMED CASH FLOWS]\n`;
+    block += `--------------------------------------------------------------------\n`;
+    block += `Attached Account Ledger Sheet: ${rawData.casualFile}\n`;
+    if (rawData.casualGigs.length === 0) {
+      block += `No casual un-documented inflows or cash items noted.\n\n`;
+    } else {
+      let combinedHustleNetSum = 0;
+      rawData.casualGigs.forEach((gig) => {
+        block += `• Activity Name: ${gig.description}\n`;
+        block += `  Gross Inflow: $${gig.gross.toFixed(2)} | Outflow Expenses: $${gig.expenses.toFixed(2)} | PROJECTED NET: $${gig.net.toFixed(2)}\n`;
+        combinedHustleNetSum += gig.net;
+      });
+      block += `  -----------------------\n`;
+      block += `CUMULATIVE CASUAL SIDE INFLOWS NET TOTAL: $${combinedHustleNetSum.toFixed(2)}\n\n`;
+    }
+
+    block += `====================================================================\n`;
+    block += `                     END OF WORKSPACE COMPILATION                   \n`;
+    block += `====================================================================`;
+
+    return block;
+  }
+
+  function executeTranscriptCompilation() {
+    const textOutput = constructPlainTextTranscript();
+    document.getElementById('masterTranscriptBlock').innerText = textOutput;
+  }
+
+  function copyTranscriptToClipboard() {
+    const strContent = constructPlainTextTranscript();
+    navigator.clipboard.writeText(strContent).then(() => {
+      alert("Success! The formatted text transcript has been secured to your clipboard.");
+    }).catch(err => {
+      alert("Could not process copy mechanism: " + err);
+    });
+  }
+
+  /* NATIVE PDF COMPRESSION & GENERATION SYSTEM */
+  function downloadTranscriptPDF() {
+    const rawData = generatePayloadStructure();
+    const transcriptText = constructPlainTextTranscript();
+    
+    // Safely pull UMD library namespace
+    const { jsPDF } = window.jspdf;
+    
+    // Setup clean letter dimension landscape properties
+    const doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'pt',
+      format: 'letter'
+    });
+
+    // Establish official courier style guidelines
+    doc.setFont("courier", "normal");
+    doc.setFontSize(10);
+    
+    // Safely wrap text columns around page width margins
+    const maxLineWrapWidth = 500;
+    const verticalLineSpacing = 14;
+    const marginsX = 56; // Clean left indentation padding
+    
+    const splitLinesArray = doc.splitTextToSize(transcriptText, maxLineWrapWidth);
+    
+    let currentY = 56;
+    const verticalPageBreakThreshold = doc.internal.pageSize.height - 56;
+
+    splitLinesArray.forEach((line) => {
+      // Create a page break if text reaches the bottom margin
+      if (currentY > verticalPageBreakThreshold) {
+        doc.addPage();
+        currentY = 56; // Reset Y tracking index on new canvas page
+      }
+      doc.text(line, marginsX, currentY);
+      currentY += verticalLineSpacing;
+    });
+
+    const safeClientLabel = rawData.profile.name.toLowerCase().replace(/\s+/g, '_');
+    doc.save(`tax_transcript_${safeClientLabel}.pdf`);
+  }
+</script>
+</body>
+</html>
