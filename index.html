@@ -47,7 +47,8 @@
     .welcome-screen {
       background-color: var(--color-primary);
       color: var(--bg-paper);
-      min-height: 100vh;
+      height: 100vh; /* Fallback */
+      height: 100dvh; /* Optimized Dynamic Viewport Height for mobile browsers */
       display: flex;
       align-items: center;
       justify-content: center;
@@ -58,6 +59,8 @@
       width: 100%;
       z-index: 100;
       transition: opacity 0.4s ease, transform 0.4s ease;
+      overflow-y: auto; /* Allows safe scrolling if content overflows view bounds */
+      -webkit-overflow-scrolling: touch;
     }
 
     .welcome-container {
@@ -65,6 +68,7 @@
       width: 100%;
       text-align: center;
       animation: fadeIn 0.6s ease-out;
+      margin: auto; /* Keeps layout centered during overflow scrolling */
     }
 
     .welcome-screen h1 {
@@ -263,6 +267,26 @@
       box-shadow: var(--shadow-sharp); margin-bottom: 2rem;
     }
     .transcript-actions-row { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; }
+
+    /* MOBILE DYNAMIC LAYOUT CORRECTIONS (Targeting iPhones and Portrait Devices) */
+    @media (max-width: 480px) {
+      .welcome-screen h1 {
+        font-size: 2.25rem;
+      }
+      .welcome-screen p {
+        font-size: 1.1rem;
+        margin-bottom: 1.5rem;
+      }
+      .manifesto-box {
+        padding: 1.25rem;
+        margin-bottom: 1.5rem;
+      }
+      .welcome-screen .btn-action {
+        padding: 1rem 2rem !important;
+        font-size: 0.9rem !important;
+        width: 100%;
+      }
+    }
   </style>
 </head>
 <body>
@@ -277,8 +301,8 @@
         <h3>Items to keep nearby:</h3>
         <ul>
           <li>All official structural W-2 forms</li>
-          <li>1099-NEC / 1099-MISC business paperwork</li>
-          <li>Venmo, CashApp, or direct cash spreadsheet details</li>
+          <li>1099-NEC / 1099-MISC business paperwork[cite: 1]</li>
+          <li>Venmo, CashApp, or direct cash spreadsheet details[cite: 1]</li>
         </ul>
       </div>
 
@@ -299,7 +323,7 @@
 
     <form id="masterIntakeForm" onsubmit="event.preventDefault();">
 
-      <!-- STEP 1: Core Identity[cite: 2] -->
+      <!-- STEP 1: Core Identity -->
       <section class="form-step-panel active" id="stepPanel0">
         <div class="step-header">
           <h2>Core Identity Profile</h2>
@@ -338,8 +362,8 @@
       <!-- STEP 2: Refined W-2 Wages Panel -->
       <section class="form-step-panel" id="stepPanel1">
         <div class="step-header">
-          <h2>W-2 Traditional Salary Blocks</h2>
-          <p>Please mirror the values from your official physical W-2 document into the slots below.</p>
+          <h2>W-2 Traditional Salary Blocks[cite: 1]</h2>
+          <p>Please mirror the values from your official physical W-2 document into the slots below.[cite: 1]</p>
         </div>
         <div id="w2DynamicContainer"></div>
         <button type="button" class="btn btn-secondary" onclick="generateW2FormBlock()">+ Add Another W-2 Form</button>
@@ -348,8 +372,8 @@
       <!-- STEP 3: Self-Employment -->
       <section class="form-step-panel" id="stepPanel2">
         <div class="step-header">
-          <h2>Self-Employment & Structured Freelance (1099)</h2>
-          <p>For contract work pipelines, independent consulting, sole proprietorships, or personal business operations.</p>
+          <h2>Self-Employment & Structured Freelance (1099)[cite: 1]</h2>
+          <p>For contract work pipelines, independent consulting, sole proprietorships, or personal business operations.[cite: 1]</p>
         </div>
         <div id="seDynamicContainer"></div>
         <button type="button" class="btn btn-secondary" onclick="generateSEFormBlock()">+ Add Business Entity Setup</button>
@@ -358,8 +382,8 @@
       <!-- STEP 4: Casual Side Hustles -->
       <section class="form-step-panel" id="stepPanel3">
         <div class="step-header">
-          <h2>Casual Side Hustles & Undocumented Cash Flows</h2>
-          <p>For informal cash tips, peer-to-peer marketplace flipping, or direct Zelle/Venmo income lacking formal 1099 paperwork.</p>
+          <h2>Casual Side Hustles & Undocumented Cash Flows[cite: 1]</h2>
+          <p>For informal cash tips, peer-to-peer marketplace flipping, or direct Zelle/Venmo income lacking formal 1099 paperwork.[cite: 1]</p>
         </div>
         <div class="repeater-card">
           <table class="ledger-table" id="hustleFormTable">
@@ -603,7 +627,7 @@
     if(targetedNode) targetedNode.remove();
   }
 
-  /* Gather values to map object (Including document filename mapping)[cite: 2] */
+  /* Gather values to map object (Including document filename mapping) */
   function generatePayloadStructure() {
     const hustleInput = document.getElementById('hustleFileUpload');
     const hustleFileName = (hustleInput && hustleInput.files.length > 0) ? hustleInput.files[0].name : "No casual statement sheets attached";
@@ -682,7 +706,7 @@
     return coreStructure;
   }
 
-  /* Compile formatted plaintext ledger script representation[cite: 2] */
+  /* Compile formatted plaintext ledger script representation */
   function constructPlainTextTranscript() {
     const rawData = generatePayloadStructure();
     
