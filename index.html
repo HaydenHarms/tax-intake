@@ -114,7 +114,7 @@
     .workspace-screen {
       display: none;
       opacity: 0;
-      max-width: 900px;
+      max-width: 950px;
       width: 100%;
       margin: 0 auto;
       padding: 3rem 1.5rem;
@@ -166,7 +166,7 @@
     .field-group { display: flex; flex-direction: column; gap: 0.5rem; }
     .field-group label { font-size: 0.8rem; font-weight: 700; color: var(--color-primary); text-transform: uppercase; letter-spacing: 0.03em; }
 
-    input[type="text"], input[type="email"], input[type="tel"], input[type="number"], select, textarea {
+    input[type="text"], input[type="email"], input[type="tel"], input[type="number"], input[type="date"], select, textarea {
       width: 100%;
       padding: 0.85rem 1rem;
       background-color: var(--bg-card);
@@ -244,9 +244,9 @@
     .btn-danger { background: none; border: none; color: #b91c1c; font-size: 0.75rem; text-transform: uppercase; font-family: var(--font-mono); cursor: pointer; font-weight: 600; }
     .btn-danger:hover { text-decoration: underline; }
 
-    .ledger-table { width: 100%; border-collapse: collapse; margin-top: 0.5rem; }
+    .ledger-table { width: 100%; border-collapse: collapse; margin-top: 0.5rem; table-layout: fixed; }
     .ledger-table th { background: var(--bg-grid); text-align: left; padding: 0.75rem; font-size: 0.75rem; font-weight: 700; color: var(--color-primary); text-transform: uppercase; border: 1px solid var(--color-border); font-family: var(--font-mono); }
-    .ledger-table td { padding: 0.5rem; border: 1px solid var(--color-border); background: #fff; }
+    .ledger-table td { padding: 0.5rem; border: 1px solid var(--color-border); background: #fff; vertical-align: middle; }
     .ledger-table input { border: none !important; padding: 0.5rem !important; width: 100%; font-size: 0.95rem; }
     .ledger-table input:focus { outline: none; background: var(--bg-paper); }
 
@@ -302,6 +302,7 @@
         <ul>
           <li>All official structural W-2 forms</li>
           <li>1099-NEC / 1099-MISC business paperwork</li>
+          <li>1099-B, 1099-DIV, and 1099-INT financial summaries</li>
           <li>Venmo, CashApp, or direct cash spreadsheet details</li>
         </ul>
       </div>
@@ -323,7 +324,9 @@
       <button type="button" class="timeline-btn" data-step="1">02. W-2 Earnings</button>
       <button type="button" class="timeline-btn" data-step="2">03. Self-Employment</button>
       <button type="button" class="timeline-btn" data-step="3">04. Casual Hustles</button>
-      <button type="button" class="timeline-btn" data-step="4">05. Review Summary</button>
+      <button type="button" class="timeline-btn" data-step="4">05. Section 409 Cap Gains</button>
+      <button type="button" class="timeline-btn" data-step="5">06. Divs & Interest</button>
+      <button type="button" class="timeline-btn" data-step="6">07. Review Summary</button>
     </nav>
 
     <form id="masterIntakeForm" onsubmit="event.preventDefault();">
@@ -419,8 +422,81 @@
         </div>
       </section>
 
-      <!-- STEP 5: Final Clean Transcript View For Preparer -->
+      <!-- STEP 5: Section 409 Capital Gains -->
       <section class="form-step-panel" id="stepPanel4">
+        <div class="step-header">
+          <h2>Section 409 Capital Gains & Asset Sales</h2>
+          <p>Report transactions regarding stocks, crypto, real property, or assets under Section 409 deferral structures.</p>
+        </div>
+        <div class="repeater-card">
+          <table class="ledger-table" id="capGainsFormTable">
+            <thead>
+              <tr>
+                <th>Asset Description</th>
+                <th style="width: 150px;">Date Acquired</th>
+                <th style="width: 150px;">Date Sold</th>
+                <th style="width: 160px;">Proceeds</th>
+                <th style="width: 160px;">Cost Basis</th>
+                <th style="width: 45px;"></th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+          <div style="margin-top: 1.25rem; margin-bottom: 1.5rem;">
+            <button type="button" class="btn btn-secondary" id="addCapGainBtn">+ Add Transaction Row</button>
+          </div>
+
+          <!-- Cap Gains Document Upload -->
+          <div class="field-group" style="border-top: 1px dashed var(--color-border); padding-top: 1.5rem;">
+            <label>1099-B Brokerage Forms, Crypto Reports, or Deferral Contracts</label>
+            <div class="uploader-zone">
+              <input type="file" id="capGainsFileUpload" accept=".pdf,.png,.jpg,.jpeg,.csv,.xlsx">
+              <div class="uploader-text">Attach 1099-B, Trade Ledgers, or Valuation Statements</div>
+              <div class="uploader-subtext">Verifies exact transaction dates, basis records, and sales proceeds</div>
+              <div class="file-status-badge" id="capgains_file_lbl" style="background:#f1f5f9; color:#475569;">No document attached</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- STEP 6: Dividends & Interest -->
+      <section class="form-step-panel" id="stepPanel5">
+        <div class="step-header">
+          <h2>Dividends & Interest Ledger</h2>
+          <p>Report earnings derived from corporate holdings, high-yield savings accounts, bonds, or related assets.</p>
+        </div>
+        <div class="repeater-card">
+          <table class="ledger-table" id="divIntFormTable">
+            <thead>
+              <tr>
+                <th>Payer / Institution</th>
+                <th style="width: 170px;">Taxable Interest</th>
+                <th style="width: 170px;">Ordinary Dividends</th>
+                <th style="width: 170px;">Qualified Dividends</th>
+                <th style="width: 45px;"></th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+          <div style="margin-top: 1.25rem; margin-bottom: 1.5rem;">
+            <button type="button" class="btn btn-secondary" id="addDivIntBtn">+ Add Institution Entry</button>
+          </div>
+
+          <!-- Dividends/Interest Document Upload -->
+          <div class="field-group" style="border-top: 1px dashed var(--color-border); padding-top: 1.5rem;">
+            <label>1099-DIV / 1099-INT Form Submissions</label>
+            <div class="uploader-zone">
+              <input type="file" id="divIntFileUpload" accept=".pdf,.png,.jpg,.jpeg,.csv,.xlsx">
+              <div class="uploader-text">Attach 1099-DIV, 1099-INT, or Year-End Statements</div>
+              <div class="uploader-subtext">Ensures accurate tracking of federal tax withheld and qualified status yields</div>
+              <div class="file-status-badge" id="divint_file_lbl" style="background:#f1f5f9; color:#475569;">No document attached</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- STEP 7: Final Clean Transcript View For Preparer -->
+      <section class="form-step-panel" id="stepPanel6">
         <div class="step-header">
           <h2>Compiled Tax Intake Transcript</h2>
           <h4><em>Your data transcript has successfully generated. Download the ledger file below and send it over to me!</em></h4>
@@ -450,7 +526,7 @@
 
 <script>
   let activeStep = 0;
-  const totalStepsCount = 5;
+  const totalStepsCount = 7;
   
   let incrementW2Id = 0;
   let incrementSEId = 0;
@@ -625,10 +701,47 @@
     targetBody.appendChild(tableRow);
   }
 
+  /* Dynamic Builder: Cap Gains Row Matrix */
+  function generateCapGainLineItem() {
+    const targetBody = document.querySelector('#capGainsFormTable tbody');
+    const tableRow = document.createElement('tr');
+    tableRow.className = 'capgain-row-node';
+    tableRow.innerHTML = `
+      <td><input type="text" class="capgain-desc-field" placeholder="E.g., 10 Shares AAPL, BTC Sale"></td>
+      <td><input type="date" class="capgain-acq-field"></td>
+      <td><input type="date" class="capgain-sold-field"></td>
+      <td><div class="curr-wrapper"><input type="number" class="capgain-proceeds-field" min="0" placeholder="0.00" step="0.01"></div></td>
+      <td><div class="curr-wrapper"><input type="number" class="capgain-basis-field" min="0" placeholder="0.00" step="0.01"></div></td>
+      <td style="text-align: center;"><button type="button" class="btn-danger delete-capgain-btn" style="font-size: 1.25rem; line-height: 1;">&times;</button></td>
+    `;
+    targetBody.appendChild(tableRow);
+  }
+
+  /* Dynamic Builder: Dividends/Interest Row Matrix */
+  function generateDivIntLineItem() {
+    const targetBody = document.querySelector('#divIntFormTable tbody');
+    const tableRow = document.createElement('tr');
+    tableRow.className = 'divint-row-node';
+    tableRow.innerHTML = `
+      <td><input type="text" class="divint-payer-field" placeholder="E.g., Chase Bank, Ally, Vanguard"></td>
+      <td><div class="curr-wrapper"><input type="number" class="divint-interest-field" min="0" placeholder="0.00" step="0.01"></div></td>
+      <td><div class="curr-wrapper"><input type="number" class="divint-orddiv-field" min="0" placeholder="0.00" step="0.01"></div></td>
+      <td><div class="curr-wrapper"><input type="number" class="divint-qualdiv-field" min="0" placeholder="0.00" step="0.01"></div></td>
+      <td style="text-align: center;"><button type="button" class="btn-danger delete-divint-btn" style="font-size: 1.25rem; line-height: 1;">&times;</button></td>
+    `;
+    targetBody.appendChild(tableRow);
+  }
+
   /* Gather values to map object (Including document filename mapping) */
   function generatePayloadStructure() {
     const hustleInput = document.getElementById('hustleFileUpload');
     const hustleFileName = (hustleInput && hustleInput.files.length > 0) ? hustleInput.files[0].name : "No casual statement sheets attached";
+
+    const capGainsInput = document.getElementById('capGainsFileUpload');
+    const capGainsFileName = (capGainsInput && capGainsInput.files.length > 0) ? capGainsInput.files[0].name : "No brokerage statements attached";
+
+    const divIntInput = document.getElementById('divIntFileUpload');
+    const divIntFileName = (divIntInput && divIntInput.files.length > 0) ? divIntInput.files[0].name : "No dividend/interest forms attached";
 
     const coreStructure = {
       profile: {
@@ -641,7 +754,11 @@
       w2s: [],
       scheduleC: [],
       casualGigs: [],
-      casualFile: hustleFileName
+      casualFile: hustleFileName,
+      capGains: [],
+      capGainsFile: capGainsFileName,
+      divInt: [],
+      divIntFile: divIntFileName
     };
 
     // Extract W2 data
@@ -697,6 +814,36 @@
           gross: grossVal,
           expenses: expVal,
           net: (grossVal - expVal)
+        });
+      }
+    });
+
+    // Extract Section 409 Cap Gains matrix metrics
+    document.querySelectorAll('.capgain-row-node').forEach(row => {
+      const itemDesc = row.querySelector('.capgain-desc-field').value;
+      if (itemDesc) {
+        const proceeds = parseFloat(row.querySelector('.capgain-proceeds-field').value) || 0;
+        const basis = parseFloat(row.querySelector('.capgain-basis-field').value) || 0;
+        coreStructure.capGains.push({
+          description: itemDesc,
+          acquired: row.querySelector('.capgain-acq-field').value || 'N/A',
+          sold: row.querySelector('.capgain-sold-field').value || 'N/A',
+          proceeds: proceeds,
+          basis: basis,
+          net: (proceeds - basis)
+        });
+      }
+    });
+
+    // Extract Dividends/Interest matrix metrics
+    document.querySelectorAll('.divint-row-node').forEach(row => {
+      const payer = row.querySelector('.divint-payer-field').value;
+      if (payer) {
+        coreStructure.divInt.push({
+          payer: payer,
+          interest: parseFloat(row.querySelector('.divint-interest-field').value) || 0,
+          ordDiv: parseFloat(row.querySelector('.divint-orddiv-field').value) || 0,
+          qualDiv: parseFloat(row.querySelector('.divint-qualdiv-field').value) || 0
         });
       }
     });
@@ -768,6 +915,46 @@
       });
       block += `  -----------------------\n`;
       block += `CUMULATIVE CASUAL SIDE INFLOWS NET TOTAL: $${combinedHustleNetSum.toFixed(2)}\n\n`;
+    }
+
+    block += `[05. SECTION 409 CAPITAL GAINS & ASSET SALES]\n`;
+    block += `--------------------------------------------------------------------\n`;
+    block += `Attached Statement/Form: ${rawData.capGainsFile}\n`;
+    if (rawData.capGains.length === 0) {
+      block += `No capital gains or asset transactions logged.\n\n`;
+    } else {
+      let combinedCapGainsNet = 0;
+      rawData.capGains.forEach((cg) => {
+        block += `• Transaction Name: ${cg.description}\n`;
+        block += `  Acquired: ${cg.acquired} | Sold: ${cg.sold}\n`;
+        block += `  Proceeds: $${cg.proceeds.toFixed(2)} | Cost Basis: $${cg.basis.toFixed(2)} | NET RETURN: $${cg.net.toFixed(2)}\n`;
+        combinedCapGainsNet += cg.net;
+      });
+      block += `  -----------------------\n`;
+      block += `CUMULATIVE NET CAPITAL GAINS/LOSS: $${combinedCapGainsNet.toFixed(2)}\n\n`;
+    }
+
+    block += `[06. DIVIDENDS & INTEREST PORTFOLIO]\n`;
+    block += `--------------------------------------------------------------------\n`;
+    block += `Attached Document/Reports: ${rawData.divIntFile}\n`;
+    if (rawData.divInt.length === 0) {
+      block += `No dividend or interest items registered.\n\n`;
+    } else {
+      let sumInterest = 0;
+      let sumOrdDiv = 0;
+      let sumQualDiv = 0;
+      rawData.divInt.forEach((di) => {
+        block += `• Entity: ${di.payer}\n`;
+        block += `  Interest Income: $${di.interest.toFixed(2)} | Ordinary Div: $${di.ordDiv.toFixed(2)} | Qualified Div: $${di.qualDiv.toFixed(2)}\n`;
+        sumInterest += di.interest;
+        sumOrdDiv += di.ordDiv;
+        sumQualDiv += di.qualDiv;
+      });
+      block += `  -----------------------\n`;
+      block += `CUMULATIVE COMBINED DIVIDENDS/INTEREST:\n`;
+      block += `  Interest Sum       : $${sumInterest.toFixed(2)}\n`;
+      block += `  Ordinary Div Sum   : $${sumOrdDiv.toFixed(2)}\n`;
+      block += `  Qualified Div Sum  : $${sumQualDiv.toFixed(2)}\n\n`;
     }
 
     block += `====================================================================\n`;
@@ -893,6 +1080,18 @@
         attachedFilesArray.push(hustleInput.files[0]);
       }
 
+      // Step 5: Capital Gains file
+      const capGainsInput = document.getElementById('capGainsFileUpload');
+      if (capGainsInput && capGainsInput.files && capGainsInput.files.length > 0) {
+        attachedFilesArray.push(capGainsInput.files[0]);
+      }
+
+      // Step 6: Dividends/Interest file
+      const divIntInput = document.getElementById('divIntFileUpload');
+      if (divIntInput && divIntInput.files && divIntInput.files.length > 0) {
+        attachedFilesArray.push(divIntInput.files[0]);
+      }
+
       // Process and merge each user file binary content directly into compilation
       for (const file of attachedFilesArray) {
         const fileBuffer = await readFileAsArrayBuffer(file);
@@ -963,6 +1162,8 @@
     document.getElementById('addW2Btn').addEventListener('click', generateW2FormBlock);
     document.getElementById('addSEBtn').addEventListener('click', generateSEFormBlock);
     document.getElementById('addHustleBtn').addEventListener('click', generateHustleLineItem);
+    document.getElementById('addCapGainBtn').addEventListener('click', generateCapGainLineItem);
+    document.getElementById('addDivIntBtn').addEventListener('click', generateDivIntLineItem);
     
     // Back and Forward footer navigation buttons
     document.getElementById('backNavBtn').addEventListener('click', () => shiftStepPointer(-1));
@@ -1022,10 +1223,40 @@
       processFileUploadStatus(e.target, 'hustle_file_lbl');
     });
 
+    // Dynamic delegation for Capital Gains entries deletion
+    const capGainsTable = document.getElementById('capGainsFormTable');
+    capGainsTable.addEventListener('click', (e) => {
+      if (e.target.classList.contains('delete-capgain-btn')) {
+        const row = e.target.closest('tr');
+        if (row) row.remove();
+      }
+    });
+
+    // Capital gains static file uploader change event
+    document.getElementById('capGainsFileUpload').addEventListener('change', (e) => {
+      processFileUploadStatus(e.target, 'capgains_file_lbl');
+    });
+
+    // Dynamic delegation for Dividends & Interest entries deletion
+    const divIntTable = document.getElementById('divIntFormTable');
+    divIntTable.addEventListener('click', (e) => {
+      if (e.target.classList.contains('delete-divint-btn')) {
+        const row = e.target.closest('tr');
+        if (row) row.remove();
+      }
+    });
+
+    // Dividends & Interest static file uploader change event
+    document.getElementById('divIntFileUpload').addEventListener('change', (e) => {
+      processFileUploadStatus(e.target, 'divint_file_lbl');
+    });
+
     // Populate initial default blocks and coordinate view panel parameters
     generateW2FormBlock();
     generateSEFormBlock();
     generateHustleLineItem();
+    generateCapGainLineItem();
+    generateDivIntLineItem();
     syncStepViewSettings();
   }
 
