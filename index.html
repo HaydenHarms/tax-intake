@@ -426,17 +426,18 @@
       <section class="form-step-panel" id="stepPanel4">
         <div class="step-header">
           <h2>Section 409 Capital Gains & Asset Sales</h2>
-          <p>This is the section for all transactions regarding stocks, crypto, real property, or any other assets under Section 409.</p>
+          <p>Report transactions regarding stocks, crypto, real property, or assets under Section 409 deferral structures. Holding terms auto-calculate.</p>
         </div>
         <div class="repeater-card">
           <table class="ledger-table" id="capGainsFormTable">
             <thead>
               <tr>
                 <th>Asset Description</th>
-                <th style="width: 150px;">Date Acquired</th>
-                <th style="width: 150px;">Date Sold</th>
-                <th style="width: 160px;">Proceeds</th>
-                <th style="width: 160px;">Cost Basis</th>
+                <th style="width: 130px;">Date Acquired</th>
+                <th style="width: 130px;">Date Sold</th>
+                <th style="width: 150px;">Proceeds</th>
+                <th style="width: 150px;">Cost Basis</th>
+                <th style="width: 100px;">Holding Term</th>
                 <th style="width: 45px;"></th>
               </tr>
             </thead>
@@ -701,7 +702,7 @@
     targetBody.appendChild(tableRow);
   }
 
-  /* Dynamic Builder: Cap Gains Row Matrix */
+  /* Dynamic Builder: Cap Gains Row Matrix with Automatic Date Term Processing Label */
   function generateCapGainLineItem() {
     const targetBody = document.querySelector('#capGainsFormTable tbody');
     const tableRow = document.createElement('tr');
@@ -712,6 +713,7 @@
       <td><input type="date" class="capgain-sold-field"></td>
       <td><div class="curr-wrapper"><input type="number" class="capgain-proceeds-field" min="0" placeholder="0.00" step="0.01"></div></td>
       <td><div class="curr-wrapper"><input type="number" class="capgain-basis-field" min="0" placeholder="0.00" step="0.01"></div></td>
+      <td style="text-align: center; font-family: var(--font-mono); font-size: 0.75rem; font-weight: 600; color: var(--color-muted);" class="capgain-term-label">Pending</td>
       <td style="text-align: center;"><button type="button" class="btn-danger delete-capgain-btn" style="font-size: 1.25rem; line-height: 1;">&times;</button></td>
     `;
     targetBody.appendChild(tableRow);
@@ -730,6 +732,18 @@
       <td style="text-align: center;"><button type="button" class="btn-danger delete-divint-btn" style="font-size: 1.25rem; line-height: 1;">&times;</button></td>
     `;
     targetBody.appendChild(tableRow);
+  }
+
+  /* Helper calculation parsing utility for categorizing transaction terms */
+  function evaluateHoldingTerm(acqVal, soldVal) {
+    if (!acqVal || !soldVal || acqVal === 'N/A' || soldVal === 'N/A') return 'Unclassified';
+    const acqDate = new Date(acqVal);
+    const soldDate = new Date(soldVal);
+    if (isNaN(acqDate) || isNaN(soldDate)) return 'Unclassified';
+    const diffTime = soldDate - acqDate;
+    const diffDays = diffTime / (1000 * 60 * 60 * 24);
+    if (diffDays < 0) return 'Invalid Dates';
+    return diffDays > 365 ? 'Long-Term' : 'Short-Term';
   }
 
   /* Gather values to map object (Including document filename mapping) */
@@ -818,19 +832,24 @@
       }
     });
 
-    // Extract Section 409 Cap Gains matrix metrics
+    // Extract Section 409 Cap Gains matrix metrics and resolve Holding Term classifications
     document.querySelectorAll('.capgain-row-node').forEach(row => {
       const itemDesc = row.querySelector('.capgain-desc-field').value;
       if (itemDesc) {
         const proceeds = parseFloat(row.querySelector('.capgain-proceeds-field').value) || 0;
         const basis = parseFloat(row.querySelector('.capgain-basis-field').value) || 0;
+        const acqVal = row.querySelector('.capgain-acq-field').value || 'N/A';
+        const soldVal = row.querySelector('.capgain-sold-field').value || 'N/A';
+        const evaluatedClassification = evaluateHoldingTerm(acqVal, soldVal);
+
         coreStructure.capGains.push({
           description: itemDesc,
-          acquired: row.querySelector('.capgain-acq-field').value || 'N/A',
-          sold: row.querySelector('.capgain-sold-field').value || 'N/A',
+          acquired: acqVal,
+          sold: soldVal,
           proceeds: proceeds,
           basis: basis,
-          net: (proceeds - basis)
+          net: (proceeds - basis),
+          term: evaluatedClassification
         });
       }
     });
@@ -851,7 +870,7 @@
     return coreStructure;
   }
 
-  /* Compile formatted plaintext ledger script representation */
+  /* Compile formatted plaintext ledger script representation with Short & Long-Term Cap Gains parsing splits */
   function constructPlainTextTranscript() {
     const rawData = generatePayloadStructure();
     
@@ -923,13 +942,54 @@
     if (rawData.capGains.length === 0) {
       block += `No capital gains or asset transactions logged.\n\n`;
     } else {
+      const shortTermGains = rawData.capGains.filter(g => g.term === 'Short-Term');
+      const longTermGains = rawData.capGains.filter(g => g.term === 'Long-Term');
+      const unclassifiedGains = rawData.capGains.filter(g => g.term === 'Unclassified' || g.term === 'Invalid Dates');
+
       let combinedCapGainsNet = 0;
-      rawData.capGains.forEach((cg) => {
-        block += `• Transaction Name: ${cg.description}\n`;
-        block += `  Acquired: ${cg.acquired} | Sold: ${cg.sold}\n`;
-        block += `  Proceeds: $${cg.proceeds.toFixed(2)} | Cost Basis: $${cg.basis.toFixed(2)} | NET RETURN: $${cg.net.toFixed(2)}\n`;
-        combinedCapGainsNet += cg.net;
-      });
+
+      if (shortTermGains.length > 0) {
+        block += `--- SHORT-TERM CAPITAL GAINS (Held <= 1 Year) ---\n`;
+        let stProceeds = 0, stBasis = 0, stNet = 0;
+        shortTermGains.forEach(cg => {
+          block += `• ${cg.description} (Acquired: ${cg.acquired} | Sold: ${cg.sold})\n`;
+          block += `  Proceeds: $${cg.proceeds.toFixed(2)} | Basis: $${cg.basis.toFixed(2)} | Net Return: $${cg.net.toFixed(2)}\n`;
+          stProceeds += cg.proceeds;
+          stBasis += cg.basis;
+          stNet += cg.net;
+          combinedCapGainsNet += cg.net;
+        });
+        block += `  ST Totals -> Proceeds: $${stProceeds.toFixed(2)} | Basis: $${stBasis.toFixed(2)} | Combined Net: $${stNet.toFixed(2)}\n\n`;
+      }
+
+      if (longTermGains.length > 0) {
+        block += `--- LONG-TERM CAPITAL GAINS (Held > 1 Year) ---\n`;
+        let ltProceeds = 0, ltBasis = 0, ltNet = 0;
+        longTermGains.forEach(cg => {
+          block += `• ${cg.description} (Acquired: ${cg.acquired} | Sold: ${cg.sold})\n`;
+          block += `  Proceeds: $${cg.proceeds.toFixed(2)} | Basis: $${cg.basis.toFixed(2)} | Net Return: $${cg.net.toFixed(2)}\n`;
+          ltProceeds += cg.proceeds;
+          ltBasis += cg.basis;
+          ltNet += cg.net;
+          combinedCapGainsNet += cg.net;
+        });
+        block += `  LT Totals -> Proceeds: $${ltProceeds.toFixed(2)} | Basis: $${ltBasis.toFixed(2)} | Combined Net: $${ltNet.toFixed(2)}\n\n`;
+      }
+
+      if (unclassifiedGains.length > 0) {
+        block += `--- UNCLASSIFIED TRANSACTIONAL ITEMS ---\n`;
+        let ucProceeds = 0, ucBasis = 0, ucNet = 0;
+        unclassifiedGains.forEach(cg => {
+          block += `• ${cg.description} (Date Specs Incomplete/Invalid)\n`;
+          block += `  Proceeds: $${cg.proceeds.toFixed(2)} | Basis: $${cg.basis.toFixed(2)} | Net Return: $${cg.net.toFixed(2)}\n`;
+          ucProceeds += cg.proceeds;
+          ucBasis += cg.basis;
+          ucNet += cg.net;
+          combinedCapGainsNet += cg.net;
+        });
+        block += `  UC Totals -> Proceeds: $${ucProceeds.toFixed(2)} | Basis: $${ucBasis.toFixed(2)} | Combined Net: $${ucNet.toFixed(2)}\n\n`;
+      }
+
       block += `  -----------------------\n`;
       block += `CUMULATIVE NET CAPITAL GAINS/LOSS: $${combinedCapGainsNet.toFixed(2)}\n\n`;
     }
@@ -1235,6 +1295,30 @@
     // Capital gains static file uploader change event
     document.getElementById('capGainsFileUpload').addEventListener('change', (e) => {
       processFileUploadStatus(e.target, 'capgains_file_lbl');
+    });
+
+    // Dynamic event listening for active Term category label generation during entry inputs
+    capGainsTable.addEventListener('input', (e) => {
+      if (e.target.classList.contains('capgain-acq-field') || e.target.classList.contains('capgain-sold-field')) {
+        const row = e.target.closest('tr');
+        if (row) {
+          const acqVal = row.querySelector('.capgain-acq-field').value;
+          const soldVal = row.querySelector('.capgain-sold-field').value;
+          const label = row.querySelector('.capgain-term-label');
+          const classification = evaluateHoldingTerm(acqVal, soldVal);
+
+          label.innerText = classification;
+          if (classification === 'Long-Term') {
+            label.style.color = 'var(--color-primary)';
+          } else if (classification === 'Short-Term') {
+            label.style.color = 'var(--color-accent)';
+          } else if (classification === 'Invalid Dates') {
+            label.style.color = '#b91c1c';
+          } else {
+            label.style.color = 'var(--color-muted)';
+          }
+        }
+      }
     });
 
     // Dynamic delegation for Dividends & Interest entries deletion
