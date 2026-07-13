@@ -1,4 +1,3 @@
-<!-- index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -307,7 +306,7 @@
         </ul>
       </div>
 
-      <button type="button" class="btn btn-action" style="padding: 1.25rem 3rem; font-size: 1rem;" onclick="revealFormWorkspace()">Begin Intake Engine</button>
+      <button type="button" class="btn btn-action" id="beginIntakeBtn" style="padding: 1.25rem 3rem; font-size: 1rem;">Begin Intake Engine</button>
       
       <!-- Visual UI Welcome Footer -->
       <div style="margin-top: 3rem; font-family: var(--font-mono); font-size: 0.8rem; opacity: 0.6; text-align: center;">
@@ -320,11 +319,11 @@
   <main class="workspace-screen" id="formWorkspace">
     
     <nav class="timeline-nav" id="timelineBar">
-      <button type="button" class="timeline-btn active" onclick="jumpDirectToStep(0)">01. Identity</button>
-      <button type="button" class="timeline-btn" onclick="jumpDirectToStep(1)">02. W-2 Earnings</button>
-      <button type="button" class="timeline-btn" onclick="jumpDirectToStep(2)">03. Self-Employment</button>
-      <button type="button" class="timeline-btn" onclick="jumpDirectToStep(3)">04. Casual Hustles</button>
-      <button type="button" class="timeline-btn" onclick="jumpDirectToStep(4)">05. Review Summary</button>
+      <button type="button" class="timeline-btn active" data-step="0">01. Identity</button>
+      <button type="button" class="timeline-btn" data-step="1">02. W-2 Earnings</button>
+      <button type="button" class="timeline-btn" data-step="2">03. Self-Employment</button>
+      <button type="button" class="timeline-btn" data-step="3">04. Casual Hustles</button>
+      <button type="button" class="timeline-btn" data-step="4">05. Review Summary</button>
     </nav>
 
     <form id="masterIntakeForm" onsubmit="event.preventDefault();">
@@ -372,7 +371,7 @@
           <p>Please mirror the values from your official physical W-2 document into the slots below.</p>
         </div>
         <div id="w2DynamicContainer"></div>
-        <button type="button" class="btn btn-secondary" onclick="generateW2FormBlock()">+ Add Another W-2 Form</button>
+        <button type="button" class="btn btn-secondary" id="addW2Btn">+ Add Another W-2 Form</button>
       </section>
 
       <!-- STEP 3: Self-Employment -->
@@ -382,7 +381,7 @@
           <p>For contract work pipelines, independent consulting, sole proprietorships, or personal business operations.</p>
         </div>
         <div id="seDynamicContainer"></div>
-        <button type="button" class="btn btn-secondary" onclick="generateSEFormBlock()">+ Add Business Entity Setup</button>
+        <button type="button" class="btn btn-secondary" id="addSEBtn">+ Add Business Entity Setup</button>
       </section>
 
       <!-- STEP 4: Casual Side Hustles -->
@@ -404,14 +403,14 @@
             <tbody></tbody>
           </table>
           <div style="margin-top: 1.25rem; margin-bottom: 1.5rem;">
-            <button type="button" class="btn btn-secondary" onclick="generateHustleLineItem()">+ Add Line Entry</button>
+            <button type="button" class="btn btn-secondary" id="addHustleBtn">+ Add Line Entry</button>
           </div>
 
           <!-- Casual Income Document Intake Proofing -->
           <div class="field-group" style="border-top: 1px dashed var(--color-border); padding-top: 1.5rem;">
             <label>Hustle Tracking & Cash Bookkeeping Ledger Receipts</label>
             <div class="uploader-zone">
-              <input type="file" id="hustleFileUpload" accept=".pdf,.png,.jpg,.jpeg,.csv,.xlsx" onchange="processFileUploadStatus(this, 'hustle_file_lbl')">
+              <input type="file" id="hustleFileUpload" accept=".pdf,.png,.jpg,.jpeg,.csv,.xlsx">
               <div class="uploader-text">Attach Bank Statements, Venmo CSVs, or Expense Spreadsheets</div>
               <div class="uploader-subtext">Required to substantiate the undocumented figures above</div>
               <div class="file-status-badge" id="hustle_file_lbl" style="background:#f1f5f9; color:#475569;">No document attached</div>
@@ -428,8 +427,8 @@
         </div>
         
         <div class="transcript-actions-row">
-          <button type="button" class="btn btn-primary" onclick="downloadTranscriptPDF()">Download Clean PDF Ledger</button>
-          <button type="button" class="btn btn-secondary" onclick="copyTranscriptToClipboard()">Copy to Clipboard</button>
+          <button type="button" class="btn btn-primary" id="downloadPdfBtn">Download Clean PDF Ledger</button>
+          <button type="button" class="btn btn-secondary" id="copyClipboardBtn">Copy to Clipboard</button>
         </div>
 
         <div class="transcript-output-panel" id="masterTranscriptBlock"></div>
@@ -437,8 +436,8 @@
 
       <!-- Navigation Bar Footer -->
       <footer class="form-navigation">
-        <button type="button" class="btn btn-secondary" id="backNavBtn" onclick="shiftStepPointer(-1)">← Back</button>
-        <button type="button" class="btn btn-primary" id="forwardNavBtn" onclick="shiftStepPointer(1)">Continue →</button>
+        <button type="button" class="btn btn-secondary" id="backNavBtn">← Back</button>
+        <button type="button" class="btn btn-primary" id="forwardNavBtn">Continue →</button>
       </footer>
 
       <!-- Visual UI Workspace Footer -->
@@ -467,13 +466,6 @@
     }, 400);
   }
 
-  document.addEventListener("DOMContentLoaded", () => {
-    generateW2FormBlock();
-    generateSEFormBlock();
-    generateHustleLineItem();
-    syncStepViewSettings();
-  });
-
   function syncStepViewSettings() {
     for (let i = 0; i < totalStepsCount; i++) {
       const targetPanel = document.getElementById(`stepPanel${i}`);
@@ -501,7 +493,7 @@
     if (activeStep < 0) activeStep = 0;
     if (activeStep >= totalStepsCount) activeStep = totalStepsCount - 1;
     syncStepViewSettings();
-    window.scrollTo({ top: 0, behavior: 'instant' });
+    window.scrollTo({ top: 0, behavior: 'auto' });
   }
 
   function jumpDirectToStep(stepIndex) {
@@ -533,7 +525,7 @@
     element.innerHTML = `
       <div class="repeater-card-header">
         <span class="repeater-card-title">W-2 Employer Entry (#${incrementW2Id})</span>
-        <button type="button" class="btn-danger" onclick="pruneSelectedElement('${element.id}')">Delete Entry</button>
+        <button type="button" class="btn-danger delete-w2-btn">Delete Entry</button>
       </div>
       <div class="form-grid cols-2">
         <div class="field-group span-full">
@@ -560,7 +552,7 @@
         <div class="field-group span-full" style="margin-top:0.5rem;">
           <label>W-2 Form Upload Requirement</label>
           <div class="uploader-zone">
-            <input type="file" class="w2-file-field" accept=".pdf,.png,.jpg,.jpeg" onchange="processFileUploadStatus(this, 'file_lbl_${incrementW2Id}')">
+            <input type="file" class="w2-file-field" accept=".pdf,.png,.jpg,.jpeg">
             <div class="uploader-text">Click or Drop your W-2 File/Photo here</div>
             <div class="uploader-subtext">Accepts PDF, PNG, or JPEG formats</div>
             <div class="file-status-badge" id="file_lbl_${incrementW2Id}" style="background:#f1f5f9; color:#475569;">No document file uploaded</div>
@@ -581,7 +573,7 @@
     element.innerHTML = `
       <div class="repeater-card-header">
         <span class="repeater-card-title">Schedule C Business Unit (#${incrementSEId})</span>
-        <button type="button" class="btn-danger" onclick="pruneSelectedElement('${element.id}')">Delete Unit</button>
+        <button type="button" class="btn-danger delete-se-btn">Delete Unit</button>
       </div>
       <div class="form-grid cols-2">
         <div class="field-group">
@@ -608,7 +600,7 @@
         <div class="field-group span-full" style="margin-top:0.5rem;">
           <label>Business 1099 Forms or Income Ledgers Upload</label>
           <div class="uploader-zone">
-            <input type="file" class="se-file-field" accept=".pdf,.png,.jpg,.jpeg,.csv,.xlsx" onchange="processFileUploadStatus(this, 'se_file_lbl_${incrementSEId}')">
+            <input type="file" class="se-file-field" accept=".pdf,.png,.jpg,.jpeg,.csv,.xlsx">
             <div class="uploader-text">Upload matching 1099-NEC forms or gross tracking spreadsheets</div>
             <div class="uploader-subtext">Accepts PDF, CSV, Excel, or Image scans</div>
             <div class="file-status-badge" id="se_file_lbl_${incrementSEId}" style="background:#f1f5f9; color:#475569;">No document file uploaded</div>
@@ -628,14 +620,9 @@
       <td><input type="text" class="hustle-desc-field" placeholder="E.g., Cash tutoring, secondary marketplace sales"></td>
       <td><div class="curr-wrapper"><input type="number" class="hustle-gross-field" min="0" placeholder="0.00" step="0.01"></div></td>
       <td><div class="curr-wrapper"><input type="number" class="hustle-expense-field" min="0" placeholder="0.00" step="0.01"></div></td>
-      <td style="text-align: center;"><button type="button" class="btn-danger" onclick="this.closest('tr').remove()" style="font-size: 1.25rem; line-height: 1;">&times;</button></td>
+      <td style="text-align: center;"><button type="button" class="btn-danger delete-hustle-btn" style="font-size: 1.25rem; line-height: 1;">&times;</button></td>
     `;
     targetBody.appendChild(tableRow);
-  }
-
-  function pruneSelectedElement(elementId) {
-    const targetedNode = document.getElementById(elementId);
-    if(targetedNode) targetedNode.remove();
   }
 
   /* Gather values to map object (Including document filename mapping) */
@@ -954,6 +941,99 @@
       applyJsPDFFooter(doc);
       doc.save(`tax_transcript_${safeClientLabel}.pdf`);
     }
+  }
+
+  // ---------------------------------------------------------
+  // Safe Programmatic Event Listeners & Initialization
+  // ---------------------------------------------------------
+  function initializeApp() {
+    // Bind main action buttons
+    document.getElementById('beginIntakeBtn').addEventListener('click', revealFormWorkspace);
+    
+    // Timeline navigation handling
+    document.getElementById('timelineBar').addEventListener('click', (e) => {
+      const btn = e.target.closest('.timeline-btn');
+      if (btn) {
+        const stepIndex = parseInt(btn.getAttribute('data-step'), 10);
+        jumpDirectToStep(stepIndex);
+      }
+    });
+
+    // Dynamic row addition buttons
+    document.getElementById('addW2Btn').addEventListener('click', generateW2FormBlock);
+    document.getElementById('addSEBtn').addEventListener('click', generateSEFormBlock);
+    document.getElementById('addHustleBtn').addEventListener('click', generateHustleLineItem);
+    
+    // Back and Forward footer navigation buttons
+    document.getElementById('backNavBtn').addEventListener('click', () => shiftStepPointer(-1));
+    document.getElementById('forwardNavBtn').addEventListener('click', () => shiftStepPointer(1));
+
+    // Compiled actions buttons
+    document.getElementById('downloadPdfBtn').addEventListener('click', downloadTranscriptPDF);
+    document.getElementById('copyClipboardBtn').addEventListener('click', copyTranscriptToClipboard);
+
+    // Dynamic delegation for W-2 additions, file changes, and deletions
+    const w2Container = document.getElementById('w2DynamicContainer');
+    w2Container.addEventListener('click', (e) => {
+      if (e.target.classList.contains('delete-w2-btn')) {
+        const card = e.target.closest('.w2-data-node');
+        if (card) card.remove();
+      }
+    });
+    w2Container.addEventListener('change', (e) => {
+      if (e.target.classList.contains('w2-file-field')) {
+        const card = e.target.closest('.w2-data-node');
+        if (card) {
+          const idNum = card.id.replace('w2_card_node_', '');
+          processFileUploadStatus(e.target, `file_lbl_${idNum}`);
+        }
+      }
+    });
+
+    // Dynamic delegation for Self-Employment additions, file changes, and deletions
+    const seContainer = document.getElementById('seDynamicContainer');
+    seContainer.addEventListener('click', (e) => {
+      if (e.target.classList.contains('delete-se-btn')) {
+        const card = e.target.closest('.se-data-node');
+        if (card) card.remove();
+      }
+    });
+    seContainer.addEventListener('change', (e) => {
+      if (e.target.classList.contains('se-file-field')) {
+        const card = e.target.closest('.se-data-node');
+        if (card) {
+          const idNum = card.id.replace('se_card_node_', '');
+          processFileUploadStatus(e.target, `se_file_lbl_${idNum}`);
+        }
+      }
+    });
+
+    // Dynamic delegation for casual side-hustle entries deletion
+    const hustleTable = document.getElementById('hustleFormTable');
+    hustleTable.addEventListener('click', (e) => {
+      if (e.target.classList.contains('delete-hustle-btn')) {
+        const row = e.target.closest('tr');
+        if (row) row.remove();
+      }
+    });
+
+    // Side-hustle static file uploader change event
+    document.getElementById('hustleFileUpload').addEventListener('change', (e) => {
+      processFileUploadStatus(e.target, 'hustle_file_lbl');
+    });
+
+    // Populate initial default blocks and coordinate view panel parameters
+    generateW2FormBlock();
+    generateSEFormBlock();
+    generateHustleLineItem();
+    syncStepViewSettings();
+  }
+
+  // Safe DOM-readiness execution fallback
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeApp);
+  } else {
+    initializeApp();
   }
 </script>
 </body>
