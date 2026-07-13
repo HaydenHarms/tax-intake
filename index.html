@@ -308,6 +308,11 @@
       </div>
 
       <button type="button" class="btn btn-action" style="padding: 1.25rem 3rem; font-size: 1rem;" onclick="revealFormWorkspace()">Begin Intake Engine</button>
+      
+      <!-- Visual UI Welcome Footer -->
+      <div style="margin-top: 3rem; font-family: var(--font-mono); font-size: 0.8rem; opacity: 0.6; text-align: center;">
+        Contact: harms.e.hayden@gmail.com
+      </div>
     </div>
   </section>
 
@@ -435,6 +440,11 @@
         <button type="button" class="btn btn-secondary" id="backNavBtn" onclick="shiftStepPointer(-1)">← Back</button>
         <button type="button" class="btn btn-primary" id="forwardNavBtn" onclick="shiftStepPointer(1)">Continue →</button>
       </footer>
+
+      <!-- Visual UI Workspace Footer -->
+      <div style="text-align: center; margin-top: 3rem; font-family: var(--font-mono); font-size: 0.8rem; color: var(--color-muted);">
+        Contact: <a href="mailto:harms.e.hayden@gmail.com" style="color: var(--color-accent); text-decoration: none;">harms.e.hayden@gmail.com</a>
+      </div>
 
     </form>
   </main>
@@ -813,46 +823,8 @@
     page.drawImage(image, { x, y, width, height });
   }
 
-  /* NATIVE PDF COMPRESSION, COMPILATION, & ATTACHMENT APPENDING SYSTEM */
-  async function downloadTranscriptPDF() {
-    const rawData = generatePayloadStructure(); //[cite: 2]
-    const transcriptText = constructPlainTextTranscript(); //[cite: 2]
-    
-    // Safely pull UMD library namespace
-    const { jsPDF } = window.jspdf; //[cite: 2]
-    
-    // Setup clean letter dimension landscape properties
-    const doc = new jsPDF({
-      orientation: 'portrait',
-      unit: 'pt',
-      format: 'letter'
-    }); //[cite: 2]
-
-    // Establish official courier style guidelines
-    doc.setFont("courier", "normal"); //[cite: 2]
-    doc.setFontSize(10); //[cite: 2]
-    
-    // Safely wrap text columns around page width margins
-    const maxLineWrapWidth = 500; //[cite: 2]
-    const verticalLineSpacing = 14; //[cite: 2]
-    const marginsX = 56; // Clean left indentation padding //[cite: 2]
-    
-    const splitLinesArray = doc.splitTextToSize(transcriptText, maxLineWrapWidth); //[cite: 2]
-    
-    let currentY = 56; //[cite: 2]
-    const verticalPageBreakThreshold = doc.internal.pageSize.height - 70; // Added safety buffer for custom footers
-
-    splitLinesArray.forEach((line) => {
-      // Create a page break if text reaches the bottom margin
-      if (currentY > verticalPageBreakThreshold) {
-        doc.addPage(); //[cite: 2]
-        currentY = 56; // Reset Y tracking index on new canvas page //[cite: 2]
-      }
-      doc.text(line, marginsX, currentY); //[cite: 2]
-      currentY += verticalLineSpacing; //[cite: 2]
-    });
-
-    // Write persistent footer to native fallback jsPDF page frames
+  /* Pure fallback callback to write persistent footer to native fallback jsPDF frames */
+  function applyJsPDFFooter(doc) {
     const nativePageCount = doc.internal.getNumberOfPages();
     for (let i = 1; i <= nativePageCount; i++) {
       doc.setPage(i);
@@ -861,85 +833,127 @@
       doc.setTextColor(110, 115, 112);
       doc.text("Contact: harms.e.hayden@gmail.com", 56, doc.internal.pageSize.height - 30);
     }
+  }
 
-    // Generate core transcript pdf buffer bytes
-    const basePdfBytes = doc.output('arraybuffer'); //[cite: 2]
+  /* NATIVE PDF COMPRESSION, COMPILATION, & ATTACHMENT APPENDING SYSTEM */
+  async function downloadTranscriptPDF() {
+    const rawData = generatePayloadStructure();[cite: 2]
+    const transcriptText = constructPlainTextTranscript();[cite: 2]
+    
+    // Safely pull UMD library namespace
+    const { jsPDF } = window.jspdf;[cite: 2]
+    
+    // Setup clean letter dimension landscape properties
+    const doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'pt',
+      format: 'letter'
+    });[cite: 2]
+
+    // Establish official courier style guidelines
+    doc.setFont("courier", "normal");[cite: 2]
+    doc.setFontSize(10);[cite: 2]
+    
+    // Safely wrap text columns around page width margins
+    const maxLineWrapWidth = 500;[cite: 2]
+    const verticalLineSpacing = 14;[cite: 2]
+    const marginsX = 56; // Clean left indentation padding[cite: 2]
+    
+    const splitLinesArray = doc.splitTextToSize(transcriptText, maxLineWrapWidth);[cite: 2]
+    
+    let currentY = 56;[cite: 2]
+    const verticalPageBreakThreshold = doc.internal.pageSize.height - 70; // Safety threshold for contact footer integration[cite: 2]
+
+    splitLinesArray.forEach((line) => {
+      // Create a page break if text reaches the bottom margin
+      if (currentY > verticalPageBreakThreshold) {
+        doc.addPage();[cite: 2]
+        currentY = 56; // Reset Y tracking index on new canvas page[cite: 2]
+      }
+      doc.text(line, marginsX, currentY);[cite: 2]
+      currentY += verticalLineSpacing;[cite: 2]
+    });
+
+    // Generate core transcript pdf buffer bytes (Un-decorated base layer to avoid dual-write overlaps)
+    const basePdfBytes = doc.output('arraybuffer');[cite: 2]
 
     try {
-      const { PDFDocument, rgb, StandardFonts } = PDFLib; //[cite: 2]
-      const mergedPdf = await PDFDocument.create(); //[cite: 2]
+      const { PDFDocument, rgb, StandardFonts } = PDFLib;[cite: 2]
+      const mergedPdf = await PDFDocument.create();[cite: 2]
       
       // Copy and insert generated transcript pages into compiling stream
-      const basePdfDoc = await PDFDocument.load(basePdfBytes); //[cite: 2]
-      const copiedTranscriptPages = await mergedPdf.copyPages(basePdfDoc, basePdfDoc.getPageIndices()); //[cite: 2]
-      copiedTranscriptPages.forEach(page => mergedPdf.addPage(page)); //[cite: 2]
+      const basePdfDoc = await PDFDocument.load(basePdfBytes);[cite: 2]
+      const copiedTranscriptPages = await mergedPdf.copyPages(basePdfDoc, basePdfDoc.getPageIndices());[cite: 2]
+      copiedTranscriptPages.forEach(page => mergedPdf.addPage(page));[cite: 2]
 
       // Locate uploaded attachments across dynamically generated form sections
-      const attachedFilesArray = []; //[cite: 2]
+      const attachedFilesArray = [];[cite: 2]
 
       // Step 2: W-2 uploaded files
       document.querySelectorAll('.w2-file-field').forEach(input => {
-        if (input.files && input.files.length > 0) attachedFilesArray.push(input.files[0]); //[cite: 2]
+        if (input.files && input.files.length > 0) attachedFilesArray.push(input.files[0]);[cite: 2]
       });
 
       // Step 3: SE Business files
       document.querySelectorAll('.se-file-field').forEach(input => {
-        if (input.files && input.files.length > 0) attachedFilesArray.push(input.files[0]); //[cite: 2]
+        if (input.files && input.files.length > 0) attachedFilesArray.push(input.files[0]);[cite: 2]
       });
 
       // Step 4: Casual Hustles file
-      const hustleInput = document.getElementById('hustleFileUpload'); //[cite: 2]
+      const hustleInput = document.getElementById('hustleFileUpload');[cite: 2]
       if (hustleInput && hustleInput.files && hustleInput.files.length > 0) {
-        attachedFilesArray.push(hustleInput.files[0]); //[cite: 2]
+        attachedFilesArray.push(hustleInput.files[0]);[cite: 2]
       }
 
       // Process and merge each user file binary content directly into compilation
       for (const file of attachedFilesArray) {
-        const fileBuffer = await readFileAsArrayBuffer(file); //[cite: 2]
-        const fileType = file.type; //[cite: 2]
+        const fileBuffer = await readFileAsArrayBuffer(file);[cite: 2]
+        const fileType = file.type;[cite: 2]
 
         if (fileType === 'application/pdf') {
-          const externalPdfDoc = await PDFDocument.load(fileBuffer); //[cite: 2]
-          const copiedPages = await mergedPdf.copyPages(externalPdfDoc, externalPdfDoc.getPageIndices()); //[cite: 2]
-          copiedPages.forEach(page => mergedPdf.addPage(page)); //[cite: 2]
+          const externalPdfDoc = await PDFDocument.load(fileBuffer);[cite: 2]
+          const copiedPages = await mergedPdf.copyPages(externalPdfDoc, externalPdfDoc.getPageIndices());[cite: 2]
+          copiedPages.forEach(page => mergedPdf.addPage(page));[cite: 2]
         } else if (fileType === 'image/jpeg' || fileType === 'image/jpg') {
-          const embeddedImage = await mergedPdf.embedJpg(fileBuffer); //[cite: 2]
-          appendImagePage(mergedPdf, embeddedImage); //[cite: 2]
+          const embeddedImage = await mergedPdf.embedJpg(fileBuffer);[cite: 2]
+          appendImagePage(mergedPdf, embeddedImage);[cite: 2]
         } else if (fileType === 'image/png') {
-          const embeddedImage = await mergedPdf.embedPng(fileBuffer); //[cite: 2]
-          appendImagePage(mergedPdf, embeddedImage); //[cite: 2]
+          const embeddedImage = await mergedPdf.embedPng(fileBuffer);[cite: 2]
+          appendImagePage(mergedPdf, embeddedImage);[cite: 2]
         }
       }
 
-      // Final dynamic pass: Draw the contact footer on ALL pages in the finalized merged compilation Document (including attachments)
+      // Final pass: Draw the contact footer on ALL pages in the finalized merged compilation (including transcript + all attachments)
       const finalPages = mergedPdf.getPages();
       const courierFont = await mergedPdf.embedFont(StandardFonts.Courier);
       for (const page of finalPages) {
         page.drawText("Contact: harms.e.hayden@gmail.com", {
           x: 56,
-          y: 30,
+          y: 30, // 30pt padding from the bottom coordinate origin (0,0)
           size: 8,
           font: courierFont,
-          color: rgb(110/255, 115/255, 112/255), // --color-muted equivalent match
+          color: rgb(110/255, 115/255, 112/255), // match with CSS --color-muted
         });
       }
 
       // Finalize and download compiled assembly output
-      const mergedPdfBytes = await mergedPdf.save(); //[cite: 2]
-      const documentBlob = new Blob([mergedPdfBytes], { type: 'application/pdf' }); //[cite: 2]
-      const downloadLink = document.createElement('a'); //[cite: 2]
-      downloadLink.href = URL.createObjectURL(documentBlob); //[cite: 2]
+      const mergedPdfBytes = await mergedPdf.save();[cite: 2]
+      const documentBlob = new Blob([mergedPdfBytes], { type: 'application/pdf' });[cite: 2]
+      const downloadLink = document.createElement('a');[cite: 2]
+      downloadLink.href = URL.createObjectURL(documentBlob);[cite: 2]
       
-      const safeClientLabel = rawData.profile.name.toLowerCase().replace(/\s+/g, '_'); //[cite: 2]
-      downloadLink.download = `tax_transcript_${safeClientLabel}.pdf`; //[cite: 2]
-      downloadLink.click(); //[cite: 2]
-      URL.revokeObjectURL(downloadLink.href); //[cite: 2]
+      const safeClientLabel = rawData.profile.name.toLowerCase().replace(/\s+/g, '_');[cite: 2]
+      downloadLink.download = `tax_transcript_${safeClientLabel}.pdf`;[cite: 2]
+      downloadLink.click();[cite: 2]
+      URL.revokeObjectURL(downloadLink.href);[cite: 2]
 
     } catch (err) {
-      console.error("PDF compiling assembly failed:", err); //[cite: 2]
-      alert("Notice: Dynamic file appending failed. Reverting download fallback to standard text-transcript document."); //[cite: 2]
-      const safeClientLabel = rawData.profile.name.toLowerCase().replace(/\s+/g, '_'); //[cite: 2]
-      doc.save(`tax_transcript_${safeClientLabel}.pdf`); //[cite: 2]
+      console.error("PDF compiling assembly failed:", err);[cite: 2]
+      alert("Notice: Dynamic file appending failed. Reverting download fallback to standard text-transcript document.");[cite: 2]
+      // Fallback: Write footer values directly to fallback context prior to printing
+      applyJsPDFFooter(doc);
+      const safeClientLabel = rawData.profile.name.toLowerCase().replace(/\s+/g, '_');[cite: 2]
+      doc.save(`tax_transcript_${safeClientLabel}.pdf`);[cite: 2]
     }
   }
 </script>
