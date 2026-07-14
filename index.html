@@ -1107,7 +1107,7 @@
           block += `• ${cg.description} (Date Specs Incomplete/Invalid)\n`;
           block += `  Proceeds: $${cg.proceeds.toFixed(2)} | Basis: $${cg.basis.toFixed(2)} | Net Return: $${cg.net.toFixed(2)}\n`;
           ucProceeds += cg.proceeds;
-          ucBasis += cg.basis;
+          ucBasis += ucBasis;
           ucNet += cg.net;
           combinedCapGainsNet += cg.net;
         });
@@ -1141,6 +1141,7 @@
       block += `  Qualified Div Sum  : $${sumQualDiv.toFixed(2)}\n\n`;
     }
 
+    block += `Notice: The information will be kept on record for 3 years in accordance with IRS rules but promptly deleted afterwards.\n\n`;
     block += `====================================================================\n`;
     block += `                     END OF WORKSPACE COMPILATION                   \n`;
     block += `====================================================================`;
