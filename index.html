@@ -157,6 +157,31 @@
     .hamburger-btn.is-active span:nth-child(2) { opacity: 0; }
     .hamburger-btn.is-active span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
 
+    /* IRS HELP TOGGLE BUTTON (fixed, top-right) */
+    .help-toggle-btn {
+      position: fixed;
+      top: 1.5rem;
+      right: 1.5rem;
+      z-index: 60;
+      background: var(--color-accent);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 0.65rem 1.2rem;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      cursor: pointer;
+      box-shadow: var(--shadow-soft);
+      display: none;
+      align-items: center;
+      gap: 6px;
+      transition: transform 0.2s, opacity 0.2s;
+    }
+    .help-toggle-btn:hover { transform: translateY(-1px); opacity: 0.95; }
+
     /* SIDEBAR OVERLAY BACKDROP */
     .sidebar-overlay {
       position: fixed;
@@ -189,6 +214,55 @@
       overflow-y: auto;
     }
     .sidebar-nav.is-open { transform: translateX(0); }
+
+    /* RIGHT-SIDE IRS INSTRUCTIONS HELP SIDEBAR */
+    .help-sidebar {
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 340px;
+      max-width: 85vw;
+      background: #faf8f5; /* Distinctive clean document-paper shade */
+      border-left: 1px solid var(--color-border);
+      z-index: 55;
+      padding: 5.5rem 1.75rem 2rem;
+      display: flex;
+      flex-direction: column;
+      transform: translateX(100%);
+      transition: transform 0.3s ease;
+      box-shadow: -4px 0 30px rgba(0, 0, 0, 0.1);
+      overflow-y: auto;
+    }
+    .help-sidebar.is-open { transform: translateX(0); }
+    
+    .help-sidebar-title {
+      font-family: var(--font-serif);
+      font-size: 1.5rem;
+      color: var(--color-primary);
+      border-bottom: 2px solid var(--color-primary);
+      padding-bottom: 0.5rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .help-section-block {
+      font-size: 0.88rem;
+      line-height: 1.6;
+      color: var(--color-text);
+    }
+    .help-section-block h4 {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      color: var(--color-accent);
+      margin-top: 1.25rem;
+      margin-bottom: 0.35rem;
+      border-bottom: 1px dashed var(--color-border);
+      padding-bottom: 0.2rem;
+    }
+    .help-section-block p { margin-bottom: 0.75rem; }
+    .help-section-block ul { padding-left: 1.2rem; margin-bottom: 0.75rem; list-style-type: square; }
+    .help-section-block li { margin-bottom: 0.4rem; }
 
     .sidebar-nav-header {
       font-family: var(--font-mono);
@@ -405,10 +479,15 @@
     <span></span><span></span><span></span>
   </button>
 
+  <!-- IRS HELP TOGGLE TRIGGER (fixed top-right, shown once workspace is revealed) -->
+  <button type="button" class="help-toggle-btn" id="helpToggleBtn">
+    📖 IRS Instructions
+  </button>
+
   <!-- SIDEBAR OVERLAY BACKDROP -->
   <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-  <!-- SIDEBAR SECTION NAVIGATION -->
+  <!-- SIDEBAR SECTION NAVIGATION (LEFT SIDE) -->
   <nav class="sidebar-nav" id="timelineBar">
     <div class="sidebar-nav-header">Sections</div>
     <button type="button" class="timeline-btn active" data-step="0">01. Identity</button>
@@ -419,6 +498,14 @@
     <button type="button" class="timeline-btn" data-step="5">06. Divs & Interest</button>
     <button type="button" class="timeline-btn" data-step="6">07. Review Summary</button>
   </nav>
+
+  <!-- CONTEXTUAL HELP SIDEBAR (RIGHT SIDE) -->
+  <aside class="help-sidebar" id="helpSidebar">
+    <div class="help-sidebar-title">Form Instructions</div>
+    <div class="help-section-block" id="helpSidebarContent">
+      <!-- Dynamic contextual help text populates here via JS -->
+    </div>
+  </aside>
 
   <!-- FORM APPLICATION SPACE -->
   <main class="workspace-screen" id="formWorkspace">
@@ -641,6 +728,72 @@
   let incrementW2Id = 0;
   let incrementSEId = 0;
 
+  // IRS Instruction Text Data Matrix mapped directly to step indexes
+  const irsHelpData = {
+    0: `
+      <h4>Form 1040 Identity Protocols</h4>
+      <p><strong>Legal Name:</strong> Must exactly mirror the value stated on your Social Security Card. Discrepancies generate instant automated processing errors with IRS validation systems.</p>
+      <h4>Filing Status Thresholds</h4>
+      <p>Determines your baseline standard deductions under IRC § 63:</p>
+      <ul>
+        <li><strong>Single:</strong> Unmarried or legally separated on December 31.</li>
+        <li><strong>Married Filing Jointly:</strong> Combines worldwide liabilities for optimized tax brackets.</li>
+        <li><strong>Head of Household:</strong> Unmarried status matching specific dependent support percentages.</li>
+      </ul>
+    `,
+    1: `
+      <h4>Form W-2 Walkthrough Reference</h4>
+      <p>Locate the structural employer sheet provided to you at year-end. Match your metrics cleanly line-by-line:</p>
+      <h4>Key Boxes Matrix:</h4>
+      <ul>
+        <li><strong>Box 1 (Wages/Tips):</strong> Reflects federal taxable gross wages. Pre-tax retirement cuts have already been removed by payroll engines here.</li>
+        <li><strong>Box 2 (Federal Tax Withheld):</strong> Total income tax already paid from paychecks directly to the IRS.</li>
+        <li><strong>Box 16 & 17:</strong> State-level wage tracking coordinates. Must reconcile directly with local revenue compliance data.</li>
+      </ul>
+    `,
+    2: `
+      <h4>Schedule C (Form 1040) Instructions</h4>
+      <p>Applicable for independent contractors, single-member LLC structures, and freelance professionals.</p>
+      <h4>Reporting Framework:</h4>
+      <ul>
+        <li><strong>Gross Receipts:</strong> Combine all totals found in <strong>Box 1 of your Form 1099-NEC</strong> alongside un-documented direct clients.</li>
+        <li><strong>Deductions (IRC § 162):</strong> Enter itemized ordinary and necessary professional outlays.</li>
+        <li><strong>Statutory Mileage:</strong> Requires clear logs indicating date, distance, and business purpose under IRC § 274(d).</li>
+      </ul>
+    `,
+    3: `
+      <h4>Schedule 1 Part I (Informal Income)</h4>
+      <p>Covers additional cash flows, marketplace sales, tip tracking pools, or peer-to-peer alternative ledger accounts lacking clear corporate 1099 files.</p>
+      <h4>IRS Rule Compliance:</h4>
+      <p>All economic accessions to wealth are legally subject to taxation under IRC § 61, regardless of whether a commercial business structure issue a formal statement.</p>
+    `,
+    4: `
+      <h4>Schedule D / Form 8949 Reference</h4>
+      <p>Applies to the sale of capital assets, equities, and cryptocurrency positions.</p>
+      <h4>Statutory Classifications:</h4>
+      <ul>
+        <li><strong>Proceeds:</strong> Total gross transactional payout amount from your 1099-B statement.</li>
+        <li><strong>Cost Basis:</strong> Original purchase tracking asset capital value plus transactional fees.</li>
+        <li><strong>Holding Terms:</strong> Positions held over 12 months qualify for structural Long-Term capital gains tax brackets (0%, 15%, or 20%). Positions held for less than 1 year align with Ordinary Income tax rates.</li>
+      </ul>
+    `,
+    5: `
+      <h4>Schedule B (Form 1040) Instructions</h4>
+      <p>Used to verify portfolio interest lines and corporate stock asset yields.</p>
+      <h4>Reference Breakouts:</h4>
+      <ul>
+        <li><strong>Form 1099-INT Box 1:</strong> Represents standard taxable bank interest. Sums exceeding $1,500 enforce automated Schedule B filing obligations.</li>
+        <li><strong>Form 1099-DIV Box 1a:</strong> Ordinary dividends taxable at standard rates.</li>
+        <li><strong>Form 1099-DIV Box 1b:</strong> Qualified dividends satisfying strict domestic holding terms. Eligible for optimized preferential tax rates.</li>
+      </ul>
+    `,
+    6: `
+      <h4>Final Transmission Verification</h4>
+      <p>Review the compiled output window block to double-check matching figures across your primary source receipts.</p>
+      <p><strong>Note:</strong> Generating this digital asset applies secure local AES-256 password protections directly within your secure browser cache sandbox layer.</p>
+    `
+  };
+
   function revealFormWorkspace() {
     const splash = document.getElementById('welcomeDashboard');
     splash.style.opacity = '0';
@@ -649,20 +802,44 @@
       const workspace = document.getElementById('formWorkspace');
       workspace.style.display = 'block';
       document.getElementById('hamburgerBtn').style.display = 'flex';
+      document.getElementById('helpToggleBtn').style.display = 'flex';
       setTimeout(() => workspace.style.opacity = '1', 50);
     }, 400);
   }
 
-  /* Opens/closes the section sidebar. Pass true/false to force a state, or omit to toggle. */
+  /* Opens/closes the section sidebar or help sidebar. Pass true/false to force a state, or omit to toggle. */
   function toggleSidebar(forceState) {
     const sidebar = document.getElementById('timelineBar');
     const overlay = document.getElementById('sidebarOverlay');
     const hamburger = document.getElementById('hamburgerBtn');
     const shouldOpen = typeof forceState === 'boolean' ? forceState : !sidebar.classList.contains('is-open');
+    
+    // Close help sidebar if navigation sidebar opens
+    if (shouldOpen) toggleHelpSidebar(false);
+
     sidebar.classList.toggle('is-open', shouldOpen);
     overlay.classList.toggle('is-active', shouldOpen);
     hamburger.classList.toggle('is-active', shouldOpen);
     hamburger.setAttribute('aria-expanded', String(shouldOpen));
+  }
+
+  function toggleHelpSidebar(forceState) {
+    const helpSidebar = document.getElementById('helpSidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    const shouldOpen = typeof forceState === 'boolean' ? forceState : !helpSidebar.classList.contains('is-open');
+
+    // Close navigation sidebar if help sidebar opens
+    if (shouldOpen) toggleSidebar(false);
+
+    helpSidebar.classList.toggle('is-open', shouldOpen);
+    overlay.classList.toggle('is-active', shouldOpen);
+  }
+
+  function updateHelpContent() {
+    const contentBox = document.getElementById('helpSidebarContent');
+    if (contentBox && irsHelpData[activeStep] !== undefined) {
+      contentBox.innerHTML = irsHelpData[activeStep];
+    }
   }
 
   function syncStepViewSettings() {
@@ -677,6 +854,9 @@
     });
 
     document.getElementById('backNavBtn').style.visibility = activeStep === 0 ? 'hidden' : 'visible';
+
+    // Update the right help sidebar instruction text dynamically
+    updateHelpContent();
 
     if (activeStep === totalStepsCount - 1) {
       document.getElementById('forwardNavBtn').style.display = 'none';
@@ -1305,7 +1485,7 @@
         // Step 4: Casual Hustles file
         const hustleInput = document.getElementById('hustleFileUpload');
         if (hustleInput && hustleInput.files && hustleInput.files.length > 0) {
-          attachedFilesArray.push(hustleInput.files[0]);
+          attachedFilesArray.push(input.files[0]);
         }
 
         // Step 5: Capital Gains file
@@ -1396,9 +1576,21 @@
 
     // Hamburger menu / sidebar open-close handling
     document.getElementById('hamburgerBtn').addEventListener('click', () => toggleSidebar());
-    document.getElementById('sidebarOverlay').addEventListener('click', () => toggleSidebar(false));
+    
+    // Help Section Right-Sidebar handling
+    document.getElementById('helpToggleBtn').addEventListener('click', () => toggleHelpSidebar());
+    
+    // Backdrop clicking closes both panels cleanly
+    document.getElementById('sidebarOverlay').addEventListener('click', () => {
+      toggleSidebar(false);
+      toggleHelpSidebar(false);
+    });
+
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') toggleSidebar(false);
+      if (e.key === 'Escape') {
+        toggleSidebar(false);
+        toggleHelpSidebar(false);
+      }
     });
 
     // Sidebar section navigation handling
