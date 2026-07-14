@@ -117,7 +117,7 @@
       max-width: 950px;
       width: 100%;
       margin: 0 auto;
-      padding: 3rem 1.5rem;
+      padding: 6.5rem 1.5rem 3rem;
       animation: fadeIn 0.5s ease-out 0.2s forwards;
     }
 
@@ -126,31 +126,94 @@
       to { opacity: 1; transform: translateY(0); }
     }
 
-    .timeline-nav {
+    /* HAMBURGER MENU TRIGGER (fixed, top-left, visible only in the form workspace) */
+    .hamburger-btn {
+      position: fixed;
+      top: 1.5rem;
+      left: 1.5rem;
+      z-index: 60;
+      width: 46px;
+      height: 46px;
+      background: var(--color-primary);
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      display: none; /* toggled to flex via JS once the workspace is revealed */
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      box-shadow: var(--shadow-soft);
+    }
+    .hamburger-btn span {
+      display: block;
+      width: 22px;
+      height: 2px;
+      background: var(--bg-paper);
+      border-radius: 2px;
+      transition: transform 0.25s ease, opacity 0.25s ease;
+    }
+    .hamburger-btn.is-active span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    .hamburger-btn.is-active span:nth-child(2) { opacity: 0; }
+    .hamburger-btn.is-active span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+    /* SIDEBAR OVERLAY BACKDROP */
+    .sidebar-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.45);
+      z-index: 50;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+    .sidebar-overlay.is-active { opacity: 1; pointer-events: auto; }
+
+    /* SIDEBAR SECTION NAVIGATION */
+    .sidebar-nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      width: 280px;
+      max-width: 80vw;
+      background: var(--color-primary);
+      z-index: 55;
+      padding: 5.5rem 1.5rem 2rem;
       display: flex;
-      gap: 0.5rem;
-      margin-bottom: 4rem;
-      border-bottom: 2px solid var(--color-border);
-      padding-bottom: 0.5rem;
-      overflow-x: auto;
+      flex-direction: column;
+      gap: 0.25rem;
+      transform: translateX(-100%);
+      transition: transform 0.3s ease;
+      box-shadow: 4px 0 30px rgba(0, 0, 0, 0.2);
+      overflow-y: auto;
+    }
+    .sidebar-nav.is-open { transform: translateX(0); }
+
+    .sidebar-nav-header {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: rgba(252, 251, 250, 0.5);
+      margin-bottom: 1rem;
     }
 
     .timeline-btn {
       background: none;
       border: none;
       font-family: var(--font-mono);
-      font-size: 0.8rem;
-      padding: 0.5rem 0.75rem;
-      color: var(--color-muted);
+      font-size: 0.85rem;
+      padding: 0.85rem 1rem;
+      color: rgba(252, 251, 250, 0.75);
       cursor: pointer;
-      white-space: nowrap;
+      text-align: left;
+      border-radius: 4px;
       transition: all 0.2s;
-      position: relative;
       text-transform: uppercase;
     }
-
-    .timeline-btn.active { color: var(--color-primary); font-weight: 600; }
-    .timeline-btn.active::after { content: ""; position: absolute; bottom: -10px; left: 0; right: 0; height: 2px; background-color: var(--color-primary); }
+    .timeline-btn:hover { background: rgba(255, 255, 255, 0.08); color: #fff; }
+    .timeline-btn.active { color: var(--color-accent); font-weight: 600; background: rgba(255, 255, 255, 0.07); }
 
     .form-step-panel { display: none; }
     .form-step-panel.active { display: block; }
@@ -337,18 +400,28 @@
     </div>
   </section>
 
+  <!-- HAMBURGER MENU TRIGGER (fixed top-left, shown once the workspace is revealed) -->
+  <button type="button" class="hamburger-btn" id="hamburgerBtn" aria-label="Open section menu" aria-expanded="false" style="display:none;">
+    <span></span><span></span><span></span>
+  </button>
+
+  <!-- SIDEBAR OVERLAY BACKDROP -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <!-- SIDEBAR SECTION NAVIGATION -->
+  <nav class="sidebar-nav" id="timelineBar">
+    <div class="sidebar-nav-header">Sections</div>
+    <button type="button" class="timeline-btn active" data-step="0">01. Identity</button>
+    <button type="button" class="timeline-btn" data-step="1">02. W-2 Earnings</button>
+    <button type="button" class="timeline-btn" data-step="2">03. Self-Employment</button>
+    <button type="button" class="timeline-btn" data-step="3">04. Casual Hustles</button>
+    <button type="button" class="timeline-btn" data-step="4">05. Section 409 Cap Gains</button>
+    <button type="button" class="timeline-btn" data-step="5">06. Divs & Interest</button>
+    <button type="button" class="timeline-btn" data-step="6">07. Review Summary</button>
+  </nav>
+
   <!-- FORM APPLICATION SPACE -->
   <main class="workspace-screen" id="formWorkspace">
-    
-    <nav class="timeline-nav" id="timelineBar">
-      <button type="button" class="timeline-btn active" data-step="0">01. Identity</button>
-      <button type="button" class="timeline-btn" data-step="1">02. W-2 Earnings</button>
-      <button type="button" class="timeline-btn" data-step="2">03. Self-Employment</button>
-      <button type="button" class="timeline-btn" data-step="3">04. Casual Hustles</button>
-      <button type="button" class="timeline-btn" data-step="4">05. Section 409 Cap Gains</button>
-      <button type="button" class="timeline-btn" data-step="5">06. Divs & Interest</button>
-      <button type="button" class="timeline-btn" data-step="6">07. Review Summary</button>
-    </nav>
 
     <form id="masterIntakeForm" onsubmit="event.preventDefault();">
 
@@ -379,6 +452,10 @@
           <div class="field-group">
             <label>Phone Contact Number</label>
             <input type="tel" id="phoneNumber" placeholder="(555) 000-0000">
+          </div>
+          <div class="field-group">
+            <label>Social Security Number <span class="field-tip">(Last 4 digits only)</span></label>
+            <input type="text" id="ssnLast4" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" placeholder="1234" required>
           </div>
 
           <div class="field-group span-full">
@@ -527,11 +604,17 @@
           <div class="calculator-callout">
             💡 <strong>Curious about what you might owe?</strong> Try our free <a href="https://haydenharms.com/tax-calculator.html" target="_blank">tax calculator tool</a> to get a pain-free projection.
           </div>
+
+          <!-- DOCUMENT PASSWORD DISCLOSURE BANNER -->
+          <div class="calculator-callout" style="border-left-color: var(--color-primary);">
+            🔒 <strong>Your document password:</strong> <span id="pdfPasswordDisplay" style="font-family: var(--font-mono); font-weight: 700;">—</span><br>
+            Formula: last 4 digits of your SSN + last 4 digits of your phone number. You don't need to remember this — only share it if your preparer asks for it.
+            <br><span style="font-size: 0.85rem; opacity: 0.8;">This password is calculated on your device only for the moment it's shown here — it is never saved, stored, or sent anywhere. Once you leave or refresh this page, it's gone.</span>
+          </div>
         </div>
-        
+
         <div class="transcript-actions-row">
           <button type="button" class="btn btn-primary" id="downloadPdfBtn">Download Clean PDF Ledger</button>
-          <button type="button" class="btn btn-secondary" id="copyClipboardBtn">Copy to Clipboard</button>
         </div>
 
         <div class="transcript-output-panel" id="masterTranscriptBlock"></div>
@@ -565,8 +648,21 @@
       splash.style.display = 'none';
       const workspace = document.getElementById('formWorkspace');
       workspace.style.display = 'block';
+      document.getElementById('hamburgerBtn').style.display = 'flex';
       setTimeout(() => workspace.style.opacity = '1', 50);
     }, 400);
+  }
+
+  /* Opens/closes the section sidebar. Pass true/false to force a state, or omit to toggle. */
+  function toggleSidebar(forceState) {
+    const sidebar = document.getElementById('timelineBar');
+    const overlay = document.getElementById('sidebarOverlay');
+    const hamburger = document.getElementById('hamburgerBtn');
+    const shouldOpen = typeof forceState === 'boolean' ? forceState : !sidebar.classList.contains('is-open');
+    sidebar.classList.toggle('is-open', shouldOpen);
+    overlay.classList.toggle('is-active', shouldOpen);
+    hamburger.classList.toggle('is-active', shouldOpen);
+    hamburger.setAttribute('aria-expanded', String(shouldOpen));
   }
 
   function syncStepViewSettings() {
@@ -789,6 +885,7 @@
         status: document.getElementById('filingStatus').value,
         email: document.getElementById('emailAddress').value || 'N/A',
         phone: document.getElementById('phoneNumber').value || 'N/A',
+        ssnLast4: document.getElementById('ssnLast4').value || 'N/A',
         notes: document.getElementById('filingNotes').value || 'None'
       },
       w2s: [],
@@ -910,6 +1007,7 @@
     block += `Filing Status  : ${rawData.profile.status}\n`;
     block += `Email Address  : ${rawData.profile.email}\n`;
     block += `Phone Contact  : ${rawData.profile.phone}\n`;
+    block += `SSN (Last 4)   : ${rawData.profile.ssnLast4}\n`;
     block += `Preparer Notes : ${rawData.profile.notes}\n\n`;
 
     block += `[02. STRUCTURAL W-2 INCOME LINE ITEMS]\n`;
@@ -1053,15 +1151,26 @@
   function executeTranscriptCompilation() {
     const textOutput = constructPlainTextTranscript();
     document.getElementById('masterTranscriptBlock').innerText = textOutput;
+    updatePasswordDisplay();
   }
 
-  function copyTranscriptToClipboard() {
-    const strContent = constructPlainTextTranscript();
-    navigator.clipboard.writeText(strContent).then(() => {
-      alert("Success! The formatted text transcript has been secured to your clipboard.");
-    }).catch(err => {
-      alert("Could not process copy mechanism: " + err);
-    });
+  /* Derive the client's PDF document password from data already collected on Step 1:
+     last 4 digits of SSN + last 4 digits of phone number. Never a separate field. */
+  function extractDigitsOnly(rawValue) {
+    return (rawValue || '').replace(/\D/g, '');
+  }
+
+  function generateDocumentPassword() {
+    const ssnDigits = extractDigitsOnly(document.getElementById('ssnLast4').value).slice(-4);
+    const phoneDigits = extractDigitsOnly(document.getElementById('phoneNumber').value).slice(-4);
+    const ssnPart = (ssnDigits || '0000').padStart(4, '0');
+    const phonePart = (phoneDigits || '0000').padStart(4, '0');
+    return `${ssnPart}${phonePart}`;
+  }
+
+  function updatePasswordDisplay() {
+    const displayEl = document.getElementById('pdfPasswordDisplay');
+    if (displayEl) displayEl.innerText = generateDocumentPassword();
   }
 
   /* Async helper to read file inputs as ArrayBuffers */
@@ -1083,148 +1192,197 @@
     page.drawImage(image, { x, y, width, height });
   }
 
-  /* Fallback callback to write persistent footer to native fallback jsPDF frames */
-  function applyJsPDFFooter(doc) {
-    const nativePageCount = doc.internal.getNumberOfPages();
-    for (let i = 1; i <= nativePageCount; i++) {
-      doc.setPage(i);
-      doc.setFont("courier", "normal");
-      doc.setFontSize(8);
-      doc.setTextColor(110, 115, 112);
-      doc.text("Contact: harms.e.hayden@gmail.com", 56, doc.internal.pageSize.height - 30);
+  // ---------------------------------------------------------
+  // Client-Side PDF Password Encryption Engine (MuPDF / WASM)
+  // ---------------------------------------------------------
+  // Loaded on-demand from CDN (only when a download is requested) so the
+  // ~10MB WASM binary never blocks initial page load. Real AES-256 PDF
+  // encryption — not a watermark or print-restriction shim.
+  const MUPDF_MODULE_URL = 'https://cdn.jsdelivr.net/npm/mupdf@1.28.0/dist/mupdf.js';
+  let cachedMupdfModulePromise = null;
+
+  function loadMupdfEncryptionEngine() {
+    if (!cachedMupdfModulePromise) {
+      cachedMupdfModulePromise = import(MUPDF_MODULE_URL).catch(err => {
+        cachedMupdfModulePromise = null; // allow a retry on the next attempt
+        throw err;
+      });
+    }
+    return cachedMupdfModulePromise;
+  }
+
+  /* Re-opens the compiled PDF bytes in MuPDF and re-saves them with real AES-256
+     password encryption applied. Returns only the encrypted bytes; the caller's
+     unencrypted buffer is never written to disk or exposed via a download link. */
+  async function encryptPdfBytes(plainPdfBytes, password) {
+    const mupdf = await loadMupdfEncryptionEngine();
+    const secureDoc = new mupdf.PDFDocument(plainPdfBytes);
+    let outputBuffer;
+    try {
+      const writeOptions = `encrypt=aes-256,owner-password=${password},user-password=${password}`;
+      outputBuffer = secureDoc.saveToBuffer(writeOptions);
+      return new Uint8Array(outputBuffer.asUint8Array());
+    } finally {
+      if (outputBuffer) outputBuffer.destroy();
+      secureDoc.destroy();
     }
   }
 
-  /* NATIVE PDF COMPRESSION, COMPILATION, & ATTACHMENT APPENDING SYSTEM */
+  /* NATIVE PDF COMPRESSION, COMPILATION, ATTACHMENT APPENDING, & ENCRYPTION SYSTEM */
   async function downloadTranscriptPDF() {
-    const rawData = generatePayloadStructure();
-    const transcriptText = constructPlainTextTranscript();
-    const safeClientLabel = rawData.profile.name.toLowerCase().replace(/\s+/g, '_');
-    
-    // Safely pull UMD library namespace
-    const { jsPDF } = window.jspdf;
-    
-    // Setup clean letter dimension landscape properties
-    const doc = new jsPDF({
-      orientation: 'portrait',
-      unit: 'pt',
-      format: 'letter'
-    });
-
-    // Establish official courier style guidelines
-    doc.setFont("courier", "normal");
-    doc.setFontSize(10);
-    
-    // Safely wrap text columns around page width margins
-    const maxLineWrapWidth = 500;
-    const verticalLineSpacing = 14;
-    const marginsX = 56; // Clean left indentation padding
-    
-    const splitLinesArray = doc.splitTextToSize(transcriptText, maxLineWrapWidth);
-    
-    let currentY = 56;
-    const verticalPageBreakThreshold = doc.internal.pageSize.height - 70; // Safety threshold for contact footer integration
-
-    splitLinesArray.forEach((line) => {
-      // Create a page break if text reaches the bottom margin
-      if (currentY > verticalPageBreakThreshold) {
-        doc.addPage();
-        currentY = 56; // Reset Y tracking index on new canvas page
-      }
-      doc.text(line, marginsX, currentY);
-      currentY += verticalLineSpacing;
-    });
-
-    // Generate core transcript pdf buffer bytes (Un-decorated base layer to avoid dual-write overlaps)
-    const basePdfBytes = doc.output('arraybuffer');
+    const downloadBtn = document.getElementById('downloadPdfBtn');
+    const originalBtnText = downloadBtn.innerText;
+    downloadBtn.disabled = true;
+    downloadBtn.innerText = 'Compiling…';
 
     try {
-      const { PDFDocument, rgb, StandardFonts } = PDFLib;
-      const mergedPdf = await PDFDocument.create();
-      
-      // Copy and insert generated transcript pages into compiling stream
-      const basePdfDoc = await PDFDocument.load(basePdfBytes);
-      const copiedTranscriptPages = await mergedPdf.copyPages(basePdfDoc, basePdfDoc.getPageIndices());
-      copiedTranscriptPages.forEach(page => mergedPdf.addPage(page));
+      const rawData = generatePayloadStructure();
+      const transcriptText = constructPlainTextTranscript();
+      const safeClientLabel = rawData.profile.name.toLowerCase().replace(/\s+/g, '_');
 
-      // Locate uploaded attachments across dynamically generated form sections
-      const attachedFilesArray = [];
+      // Safely pull UMD library namespace
+      const { jsPDF } = window.jspdf;
 
-      // Step 2: W-2 uploaded files
-      document.querySelectorAll('.w2-file-field').forEach(input => {
-        if (input.files && input.files.length > 0) attachedFilesArray.push(input.files[0]);
+      // Setup clean letter dimension landscape properties
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'pt',
+        format: 'letter'
       });
 
-      // Step 3: SE Business files
-      document.querySelectorAll('.se-file-field').forEach(input => {
-        if (input.files && input.files.length > 0) attachedFilesArray.push(input.files[0]);
-      });
+      // Establish official courier style guidelines
+      doc.setFont("courier", "normal");
+      doc.setFontSize(10);
 
-      // Step 4: Casual Hustles file
-      const hustleInput = document.getElementById('hustleFileUpload');
-      if (hustleInput && hustleInput.files && hustleInput.files.length > 0) {
-        attachedFilesArray.push(hustleInput.files[0]);
-      }
+      // Safely wrap text columns around page width margins
+      const maxLineWrapWidth = 500;
+      const verticalLineSpacing = 14;
+      const marginsX = 56; // Clean left indentation padding
 
-      // Step 5: Capital Gains file
-      const capGainsInput = document.getElementById('capGainsFileUpload');
-      if (capGainsInput && capGainsInput.files && capGainsInput.files.length > 0) {
-        attachedFilesArray.push(capGainsInput.files[0]);
-      }
+      const splitLinesArray = doc.splitTextToSize(transcriptText, maxLineWrapWidth);
 
-      // Step 6: Dividends/Interest file
-      const divIntInput = document.getElementById('divIntFileUpload');
-      if (divIntInput && divIntInput.files && divIntInput.files.length > 0) {
-        attachedFilesArray.push(divIntInput.files[0]);
-      }
+      let currentY = 56;
+      const verticalPageBreakThreshold = doc.internal.pageSize.height - 70; // Safety threshold for contact footer integration
 
-      // Process and merge each user file binary content directly into compilation
-      for (const file of attachedFilesArray) {
-        const fileBuffer = await readFileAsArrayBuffer(file);
-        const fileType = file.type;
-
-        if (fileType === 'application/pdf') {
-          const externalPdfDoc = await PDFDocument.load(fileBuffer);
-          const copiedPages = await mergedPdf.copyPages(externalPdfDoc, externalPdfDoc.getPageIndices());
-          copiedPages.forEach(page => mergedPdf.addPage(page));
-        } else if (fileType === 'image/jpeg' || fileType === 'image/jpg') {
-          const embeddedImage = await mergedPdf.embedJpg(fileBuffer);
-          appendImagePage(mergedPdf, embeddedImage);
-        } else if (fileType === 'image/png') {
-          const embeddedImage = await mergedPdf.embedPng(fileBuffer);
-          appendImagePage(mergedPdf, embeddedImage);
+      splitLinesArray.forEach((line) => {
+        // Create a page break if text reaches the bottom margin
+        if (currentY > verticalPageBreakThreshold) {
+          doc.addPage();
+          currentY = 56; // Reset Y tracking index on new canvas page
         }
-      }
+        doc.text(line, marginsX, currentY);
+        currentY += verticalLineSpacing;
+      });
 
-      // Final pass: Draw the contact footer on ALL pages in the finalized merged compilation (including transcript + all attachments)
-      const finalPages = mergedPdf.getPages();
-      const courierFont = await mergedPdf.embedFont(StandardFonts.Courier);
-      for (const page of finalPages) {
-        page.drawText("Contact: harms.e.hayden@gmail.com", {
-          x: 56,
-          y: 30, // 30pt padding from the bottom coordinate origin (0,0)
-          size: 8,
-          font: courierFont,
-          color: rgb(110/255, 115/255, 112/255), // match with CSS --color-muted
+      // Generate core transcript pdf buffer bytes (Un-decorated base layer to avoid dual-write overlaps)
+      const basePdfBytes = doc.output('arraybuffer');
+
+      // ---- Compile the full transcript + attachments PDF entirely in memory ----
+      let mergedPdfBytes;
+      try {
+        const { PDFDocument, rgb, StandardFonts } = PDFLib;
+        const mergedPdf = await PDFDocument.create();
+
+        // Copy and insert generated transcript pages into compiling stream
+        const basePdfDoc = await PDFDocument.load(basePdfBytes);
+        const copiedTranscriptPages = await mergedPdf.copyPages(basePdfDoc, basePdfDoc.getPageIndices());
+        copiedTranscriptPages.forEach(page => mergedPdf.addPage(page));
+
+        // Locate uploaded attachments across dynamically generated form sections
+        const attachedFilesArray = [];
+
+        // Step 2: W-2 uploaded files
+        document.querySelectorAll('.w2-file-field').forEach(input => {
+          if (input.files && input.files.length > 0) attachedFilesArray.push(input.files[0]);
         });
+
+        // Step 3: SE Business files
+        document.querySelectorAll('.se-file-field').forEach(input => {
+          if (input.files && input.files.length > 0) attachedFilesArray.push(input.files[0]);
+        });
+
+        // Step 4: Casual Hustles file
+        const hustleInput = document.getElementById('hustleFileUpload');
+        if (hustleInput && hustleInput.files && hustleInput.files.length > 0) {
+          attachedFilesArray.push(hustleInput.files[0]);
+        }
+
+        // Step 5: Capital Gains file
+        const capGainsInput = document.getElementById('capGainsFileUpload');
+        if (capGainsInput && capGainsInput.files && capGainsInput.files.length > 0) {
+          attachedFilesArray.push(capGainsInput.files[0]);
+        }
+
+        // Step 6: Dividends/Interest file
+        const divIntInput = document.getElementById('divIntFileUpload');
+        if (divIntInput && divIntInput.files && divIntInput.files.length > 0) {
+          attachedFilesArray.push(divIntInput.files[0]);
+        }
+
+        // Process and merge each user file binary content directly into compilation
+        for (const file of attachedFilesArray) {
+          const fileBuffer = await readFileAsArrayBuffer(file);
+          const fileType = file.type;
+
+          if (fileType === 'application/pdf') {
+            const externalPdfDoc = await PDFDocument.load(fileBuffer);
+            const copiedPages = await mergedPdf.copyPages(externalPdfDoc, externalPdfDoc.getPageIndices());
+            copiedPages.forEach(page => mergedPdf.addPage(page));
+          } else if (fileType === 'image/jpeg' || fileType === 'image/jpg') {
+            const embeddedImage = await mergedPdf.embedJpg(fileBuffer);
+            appendImagePage(mergedPdf, embeddedImage);
+          } else if (fileType === 'image/png') {
+            const embeddedImage = await mergedPdf.embedPng(fileBuffer);
+            appendImagePage(mergedPdf, embeddedImage);
+          }
+        }
+
+        // Final pass: Draw the contact footer on ALL pages in the finalized merged compilation (including transcript + all attachments)
+        const finalPages = mergedPdf.getPages();
+        const courierFont = await mergedPdf.embedFont(StandardFonts.Courier);
+        for (const page of finalPages) {
+          page.drawText("Contact: harms.e.hayden@gmail.com", {
+            x: 56,
+            y: 30, // 30pt padding from the bottom coordinate origin (0,0)
+            size: 8,
+            font: courierFont,
+            color: rgb(110/255, 115/255, 112/255), // match with CSS --color-muted
+          });
+        }
+
+        mergedPdfBytes = await mergedPdf.save();
+      } catch (compileErr) {
+        console.error("PDF compiling assembly failed:", compileErr);
+        alert("Notice: Could not compile the transcript and attachments into a PDF. No file was generated. Please check your uploaded attachments and try again.");
+        return;
       }
 
-      // Finalize and download compiled assembly output
-      const mergedPdfBytes = await mergedPdf.save();
-      const documentBlob = new Blob([mergedPdfBytes], { type: 'application/pdf' });
+      // ---- Encrypt before anything ever touches a download link. If the WASM
+      // encryption engine can't load or run, fail safely: no unencrypted PDF
+      // is ever written to disk or exposed. ----
+      let encryptedPdfBytes;
+      try {
+        const password = generateDocumentPassword();
+        downloadBtn.innerText = 'Encrypting…';
+        encryptedPdfBytes = await encryptPdfBytes(mergedPdfBytes, password);
+      } catch (encErr) {
+        console.error("PDF password-encryption engine failed:", encErr);
+        alert("Security Notice: The password-protection engine could not run in this browser, so no PDF was generated (an unprotected file is never downloaded). Please try the latest version of Chrome, Safari, or Edge, or contact your preparer directly.");
+        return;
+      } finally {
+        mergedPdfBytes = null; // drop the reference to the unencrypted bytes as soon as possible
+      }
+
+      const documentBlob = new Blob([encryptedPdfBytes], { type: 'application/pdf' });
       const downloadLink = document.createElement('a');
       downloadLink.href = URL.createObjectURL(documentBlob);
-      
+
       downloadLink.download = `tax_transcript_${safeClientLabel}.pdf`;
       downloadLink.click();
       URL.revokeObjectURL(downloadLink.href);
-
-    } catch (err) {
-      console.error("PDF compiling assembly failed:", err);
-      alert("Notice: Dynamic file appending failed. Reverting download fallback to standard text-transcript document.");
-      // Fallback: Write footer values directly to fallback context prior to printing
-      applyJsPDFFooter(doc);
-      doc.save(`tax_transcript_${safeClientLabel}.pdf`);
+    } finally {
+      downloadBtn.disabled = false;
+      downloadBtn.innerText = originalBtnText;
     }
   }
 
@@ -1234,13 +1392,21 @@
   function initializeApp() {
     // Bind main action buttons
     document.getElementById('beginIntakeBtn').addEventListener('click', revealFormWorkspace);
-    
-    // Timeline navigation handling
+
+    // Hamburger menu / sidebar open-close handling
+    document.getElementById('hamburgerBtn').addEventListener('click', () => toggleSidebar());
+    document.getElementById('sidebarOverlay').addEventListener('click', () => toggleSidebar(false));
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') toggleSidebar(false);
+    });
+
+    // Sidebar section navigation handling
     document.getElementById('timelineBar').addEventListener('click', (e) => {
       const btn = e.target.closest('.timeline-btn');
       if (btn) {
         const stepIndex = parseInt(btn.getAttribute('data-step'), 10);
         jumpDirectToStep(stepIndex);
+        toggleSidebar(false);
       }
     });
 
@@ -1257,7 +1423,6 @@
 
     // Compiled actions buttons
     document.getElementById('downloadPdfBtn').addEventListener('click', downloadTranscriptPDF);
-    document.getElementById('copyClipboardBtn').addEventListener('click', copyTranscriptToClipboard);
 
     // Dynamic delegation for W-2 additions, file changes, and deletions
     const w2Container = document.getElementById('w2DynamicContainer');
