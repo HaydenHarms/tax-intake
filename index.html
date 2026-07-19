@@ -695,8 +695,8 @@
           <!-- DOCUMENT PASSWORD DISCLOSURE BANNER -->
           <div class="calculator-callout" style="border-left-color: var(--color-primary);">
             🔒 <strong>Your document password:</strong> <span id="pdfPasswordDisplay" style="font-family: var(--font-mono); font-weight: 700;">—</span><br>
-            Formula: last 4 digits of your SSN + last 4 digits of your phone number. You don't need to remember this — only share it if your preparer asks for it.
-            <br><span style="font-size: 0.85rem; opacity: 0.8;">This password is calculated on your device only for the moment it's shown here — it is never saved, stored, or sent anywhere. Once you leave or refresh this page, it's gone.</span>
+            <strong>Save this now</strong> — it's a random password generated just for this file, not something you can look up or recreate later. Send it to your preparer separately from the PDF itself (a different email or text than the one carrying the file).
+            <br><span style="font-size: 0.85rem; opacity: 0.8;">This password is generated on your device only for the moment it's shown here — it is never saved, stored, or sent anywhere by us. Once you leave or refresh this page, it's gone for good, so copy it somewhere safe first.</span>
           </div>
         </div>
 
@@ -1335,18 +1335,19 @@
     updatePasswordDisplay();
   }
 
-  /* Derive the client's PDF document password from data already collected on Step 1:
-     last 4 digits of SSN + last 4 digits of phone number. Never a separate field. */
-  function extractDigitsOnly(rawValue) {
-    return (rawValue || '').replace(/\D/g, '');
-  }
+  /* Generate a real random password for the PDF (crypto.getRandomValues, not
+     derived from guessable client data like SSN/phone). Cached per session so
+     the value shown to the client on-screen always matches what's actually
+     used to encrypt the file — it's only generated once, on first display. */
+  let cachedDocumentPassword = null;
 
   function generateDocumentPassword() {
-    const ssnDigits = extractDigitsOnly(document.getElementById('ssnLast4').value).slice(-4);
-    const phoneDigits = extractDigitsOnly(document.getElementById('phoneNumber').value).slice(-4);
-    const ssnPart = (ssnDigits || '0000').padStart(4, '0');
-    const phonePart = (phoneDigits || '0000').padStart(4, '0');
-    return `${ssnPart}${phonePart}`;
+    if (cachedDocumentPassword) return cachedDocumentPassword;
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789'; // no 0/O/1/l/I ambiguity
+    const length = 12;
+    const bytes = crypto.getRandomValues(new Uint8Array(length));
+    cachedDocumentPassword = Array.from(bytes, b => chars[b % chars.length]).join('');
+    return cachedDocumentPassword;
   }
 
   function updatePasswordDisplay() {
